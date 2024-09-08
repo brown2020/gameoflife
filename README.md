@@ -2,8 +2,6 @@
 
 A full-screen, interactive implementation of Conway's Game of Life built with **Next.js 14** and TypeScript. This project allows users to explore different patterns and observe how they evolve according to the rules of Conway's Game of Life.
 
-![Screenshot](screenshot.png)
-
 ### Table of Contents
 
 1. [Introduction](#introduction)
