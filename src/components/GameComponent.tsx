@@ -103,7 +103,7 @@ const GameComponent: React.FC = () => {
           <button
             key={pattern}
             onClick={() => setPattern(pattern)}
-            className="px-2 py-1 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600"
+            className="px-2 py-1 text-sm font-medium text-white bg-blue-500 rounded-sm hover:bg-blue-600"
           >
             {pattern}
           </button>
