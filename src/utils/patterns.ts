@@ -97,13 +97,14 @@ export const patterns: { [key: string]: Grid } = {
   ),
   Diehard: createEmptyGrid().map((row, i) =>
     row.map((cell, j) =>
-      (i === 10 && j === 30) ||
-      (i === 11 && j === 24) ||
-      (i === 11 && j === 25) ||
-      (i === 12 && j === 25) ||
-      (i === 11 && j === 29) ||
-      (i === 11 && j === 30) ||
-      (i === 11 && j === 31)
+      // Diehard pattern - dies after 130 generations
+      (i === 20 && j === 22) ||
+      (i === 21 && j === 16) ||
+      (i === 21 && j === 17) ||
+      (i === 22 && j === 17) ||
+      (i === 22 && j === 21) ||
+      (i === 22 && j === 22) ||
+      (i === 22 && j === 23)
         ? 1
         : 0
     )
@@ -146,6 +147,17 @@ export const patterns: { [key: string]: Grid } = {
       (i === 12 && j === 13) ||
       (i === 13 && j === 12) ||
       (i === 13 && j === 13)
+        ? 1
+        : 0
+    )
+  ),
+  RPentomino: createEmptyGrid().map((row, i) =>
+    row.map((cell, j) =>
+      (i === 20 && j === 21) ||
+      (i === 20 && j === 22) ||
+      (i === 21 && j === 20) ||
+      (i === 21 && j === 21) ||
+      (i === 22 && j === 21)
         ? 1
         : 0
     )
