@@ -327,12 +327,12 @@ const GameComponent: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg max-w-md">
             <h2 className="text-white text-xl mb-4">
-              Conway's Game of Life Rules
+              Conway&apos;s Game of Life Rules
             </h2>
             <div className="text-white mb-4">
               <p className="mb-2">
-                Conway's Game of Life is a cellular automaton where cells live
-                or die based on their neighbors:
+                Conway&apos;s Game of Life is a cellular automaton where cells
+                live or die based on their neighbors:
               </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>
@@ -376,7 +376,7 @@ const GameComponent: React.FC = () => {
 
             {tutorialStep === 1 && (
               <div className="text-white mb-4">
-                <p className="mb-2">Welcome to Conway's Game of Life!</p>
+                <p className="mb-2">Welcome to Conway&apos;s Game of Life!</p>
                 <p>
                   This simulation demonstrates how complex patterns can emerge
                   from simple rules.
@@ -397,7 +397,8 @@ const GameComponent: React.FC = () => {
             {tutorialStep === 3 && (
               <div className="text-white mb-4">
                 <p className="mb-2">
-                  Try selecting a predefined pattern like "Glider" or "Pulsar".
+                  Try selecting a predefined pattern like &quot;Glider&quot; or
+                  &quot;Pulsar&quot;.
                 </p>
                 <p>These are famous patterns with interesting behaviors.</p>
               </div>
@@ -406,20 +407,22 @@ const GameComponent: React.FC = () => {
             {tutorialStep === 4 && (
               <div className="text-white mb-4">
                 <p className="mb-2">
-                  Press the "Start" button to begin the simulation.
+                  Press the &quot;Start&quot; button to begin the simulation.
                 </p>
-                <p>Watch how the cells evolve according to Conway's rules!</p>
+                <p>
+                  Watch how the cells evolve according to Conway&apos;s rules!
+                </p>
               </div>
             )}
 
             {tutorialStep === 5 && (
               <div className="text-white mb-4">
                 <p className="mb-2">
-                  You're all set to explore the Game of Life!
+                  You&apos;re all set to explore the Game of Life!
                 </p>
                 <p>
-                  Check out the "Rules" button if you want to learn more about
-                  how it works.
+                  Check out the &quot;Rules&quot; button if you want to learn
+                  more about how it works.
                 </p>
               </div>
             )}
