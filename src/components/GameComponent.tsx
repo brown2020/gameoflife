@@ -62,23 +62,29 @@ const GameComponent: React.FC = () => {
     Toad: "A simple period-2 oscillator that alternates between two states. One of the first oscillators discovered.",
     Beacon:
       "A period-2 oscillator that switches between two phases. Resembles a lighthouse.",
-    Acorn:
-      "A methuselah pattern that evolves for 5206 generations before stabilizing. Discovered by Charles Corderman.",
     RPentomino:
       "One of the most active small patterns, this R-pentomino evolves for 1103 generations and produces many gliders.",
-    InfiniteGrowth:
-      "A pattern that demonstrates unbounded growth in one direction, creating a trail of stable objects.",
-    GliderGun2:
-      "An alternative glider gun design that also produces a stream of gliders.",
-    Spacefiller:
-      "A pattern that rapidly expands to fill available space. It creates complex structures as it grows.",
-    GardenOfEden:
-      "A pattern that cannot be created through normal evolution - it can only exist as an initial state.",
-    Clock:
-      "A simple period-2 oscillator that resembles the hands of a clock as it alternates between two states.",
   };
 
-  // Function to render the grid on canvas
+  // Add simulation speed control
+  const [speed, setSpeed] = useState<number>(100);
+  // Add grid size control
+  const [cellSizeState, setCellSize] = useState<number>(cellSize);
+  // Add random grid generation
+  const generateRandomGrid = () => {
+    const newGrid = createEmptyGrid().map((row) =>
+      row.map(() => (Math.random() > 0.7 ? 1 : 0))
+    );
+    setGrid(newGrid);
+    setGeneration(0);
+  };
+
+  // Add step function to advance one generation
+  const stepSimulation = () => {
+    runSimulation();
+  };
+
+  // Function to render the grid on canvas with improved colors
   const renderGrid = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -92,16 +98,77 @@ const GameComponent: React.FC = () => {
     // Draw the grid
     for (let i = 0; i < numRows; i++) {
       for (let j = 0; j < numCols; j++) {
-        // Fill cell
-        ctx.fillStyle = grid[i][j] ? "#4ade80" : "#000000";
-        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+        // Fill cell with gradient for live cells
+        if (grid[i][j]) {
+          const gradient = ctx.createRadialGradient(
+            j * cellSizeState + cellSizeState / 2,
+            i * cellSizeState + cellSizeState / 2,
+            0,
+            j * cellSizeState + cellSizeState / 2,
+            i * cellSizeState + cellSizeState / 2,
+            cellSizeState / 1.5
+          );
+          gradient.addColorStop(0, "#4ade80");
+          gradient.addColorStop(1, "#22c55e");
+          ctx.fillStyle = gradient;
+        } else {
+          ctx.fillStyle = "#111827";
+        }
+        ctx.fillRect(
+          j * cellSizeState,
+          i * cellSizeState,
+          cellSizeState,
+          cellSizeState
+        );
 
         // Draw cell border
         ctx.strokeStyle = "#374151";
-        ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+        ctx.strokeRect(
+          j * cellSizeState,
+          i * cellSizeState,
+          cellSizeState,
+          cellSizeState
+        );
       }
     }
-  }, [grid]);
+  }, [grid, cellSizeState]);
+
+  // Add zoom functionality
+  const handleZoom = (zoomIn: boolean) => {
+    setCellSize((prev) => {
+      const newSize = zoomIn ? prev + 2 : prev - 2;
+      return Math.max(5, Math.min(30, newSize));
+    });
+  };
+
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case " ": // Space to toggle running
+          setIsRunning((prev) => !prev);
+          break;
+        case "c": // C to clear
+          clearGrid();
+          break;
+        case "r": // R to random
+          generateRandomGrid();
+          break;
+        case "s": // S to step
+          if (!isRunning) stepSimulation();
+          break;
+        case "+": // + to zoom in
+          handleZoom(true);
+          break;
+        case "-": // - to zoom out
+          handleZoom(false);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRunning]);
 
   // Use effect to render the grid whenever it changes
   useEffect(() => {
@@ -213,8 +280,8 @@ const GameComponent: React.FC = () => {
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
 
-    const i = Math.floor(y / cellSize);
-    const j = Math.floor(x / cellSize);
+    const i = Math.floor(y / cellSizeState);
+    const j = Math.floor(x / cellSizeState);
 
     if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
       const newGrid = grid.map((row, rowIndex) =>
@@ -264,10 +331,28 @@ const GameComponent: React.FC = () => {
           {isRunning ? "Stop" : "Start"}
         </button>
         <button
+          onClick={stepSimulation}
+          disabled={isRunning}
+          className={`px-2 py-1 text-sm font-medium text-white rounded-sm m-1 ${
+            isRunning
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-500 hover:bg-indigo-600"
+          }`}
+          title="Advance one generation"
+        >
+          Step
+        </button>
+        <button
           onClick={clearGrid}
           className="px-2 py-1 text-sm font-medium text-white bg-gray-500 rounded-sm hover:bg-gray-600 m-1"
         >
           Clear
+        </button>
+        <button
+          onClick={generateRandomGrid}
+          className="px-2 py-1 text-sm font-medium text-white bg-amber-500 rounded-sm hover:bg-amber-600 m-1"
+        >
+          Random
         </button>
         <button
           onClick={() => {
@@ -286,22 +371,59 @@ const GameComponent: React.FC = () => {
         </button>
       </div>
 
-      {/* Generation Counter */}
-      <div className="text-white mb-2 text-center">
-        Generation: <span className="font-mono">{generation}</span>
-        {generation > 0 && (
+      {/* Controls Row */}
+      <div className="flex items-center justify-center mb-4 space-x-4">
+        {/* Generation Counter */}
+        <div className="text-white text-center">
+          Generation: <span className="font-mono">{generation}</span>
+          {generation > 0 && (
+            <button
+              onClick={() => setGeneration(0)}
+              className="ml-2 px-1 text-xs bg-gray-600 rounded hover:bg-gray-500"
+              title="Reset generation counter"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Speed Control */}
+        <div className="flex items-center">
+          <span className="text-white mr-2">Speed:</span>
+          <input
+            type="range"
+            min="10"
+            max="500"
+            step="10"
+            value={500 - speed}
+            onChange={(e) => setSpeed(500 - parseInt(e.target.value))}
+            className="w-24"
+          />
+        </div>
+
+        {/* Zoom Controls */}
+        <div className="flex items-center">
+          <span className="text-white mr-2">Zoom:</span>
           <button
-            onClick={() => setGeneration(0)}
-            className="ml-2 px-1 text-xs bg-gray-600 rounded hover:bg-gray-500"
-            title="Reset generation counter"
+            onClick={() => handleZoom(false)}
+            className="px-2 py-1 text-sm font-medium text-white bg-gray-600 rounded-sm hover:bg-gray-500"
+            title="Zoom out"
           >
-            Reset
+            -
           </button>
-        )}
+          <span className="text-white mx-2">{cellSizeState}px</span>
+          <button
+            onClick={() => handleZoom(true)}
+            className="px-2 py-1 text-sm font-medium text-white bg-gray-600 rounded-sm hover:bg-gray-500"
+            title="Zoom in"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       {/* Pattern Information Panel */}
-      {selectedPattern && (
+      {selectedPattern && patternInfo[selectedPattern] && (
         <div className="bg-gray-700 p-3 rounded-md mb-4 max-w-2xl mx-auto">
           <h3 className="text-white text-lg font-medium mb-1">
             {selectedPattern}
@@ -312,14 +434,20 @@ const GameComponent: React.FC = () => {
         </div>
       )}
 
-      <div className="overflow-auto max-w-full max-h-[80vh] border border-gray-700">
+      <div className="overflow-auto max-w-full max-h-[80vh] border border-gray-700 rounded-md">
         <canvas
           ref={canvasRef}
-          width={numCols * cellSize}
-          height={numRows * cellSize}
+          width={numCols * cellSizeState}
+          height={numRows * cellSizeState}
           onClick={handleCanvasClick}
           className="cursor-pointer"
         />
+      </div>
+
+      {/* Keyboard Shortcuts Help */}
+      <div className="text-gray-400 text-xs mt-2 text-center">
+        Keyboard shortcuts: Space (Start/Stop), C (Clear), R (Random), S (Step),
+        + (Zoom In), - (Zoom Out)
       </div>
 
       {/* Rules Modal */}
@@ -356,7 +484,10 @@ const GameComponent: React.FC = () => {
                 <li>Click on cells to toggle them between alive and dead</li>
                 <li>Use the Start/Stop button to control the simulation</li>
                 <li>Select predefined patterns to see interesting behaviors</li>
-                <li>Clear the grid to start over</li>
+                <li>Use the Step button to advance one generation at a time</li>
+                <li>Adjust the speed slider to control simulation speed</li>
+                <li>Use the zoom controls to adjust the view</li>
+                <li>Try the Random button to generate random patterns</li>
               </ul>
             </div>
             <button
