@@ -70,19 +70,6 @@ const GameComponent: React.FC = () => {
   const [speed, setSpeed] = useState<number>(100);
   // Add grid size control
   const [cellSizeState, setCellSize] = useState<number>(cellSize);
-  // Add random grid generation
-  const generateRandomGrid = () => {
-    const newGrid = createEmptyGrid().map((row) =>
-      row.map(() => (Math.random() > 0.7 ? 1 : 0))
-    );
-    setGrid(newGrid);
-    setGeneration(0);
-  };
-
-  // Add step function to advance one generation
-  const stepSimulation = () => {
-    runSimulation();
-  };
 
   // Function to render the grid on canvas with improved colors
   const renderGrid = useCallback(() => {
@@ -133,57 +120,35 @@ const GameComponent: React.FC = () => {
     }
   }, [grid, cellSizeState]);
 
-  // Add zoom functionality
-  const handleZoom = (zoomIn: boolean) => {
-    setCellSize((prev) => {
-      const newSize = zoomIn ? prev + 2 : prev - 2;
-      return Math.max(5, Math.min(30, newSize));
-    });
-  };
+  // Handle clicking on a cell to toggle its state
+  const handleCanvasClick = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-  // Add keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case " ": // Space to toggle running
-          setIsRunning((prev) => !prev);
-          break;
-        case "c": // C to clear
-          clearGrid();
-          break;
-        case "r": // R to random
-          generateRandomGrid();
-          break;
-        case "s": // S to step
-          if (!isRunning) stepSimulation();
-          break;
-        case "+": // + to zoom in
-          handleZoom(true);
-          break;
-        case "-": // - to zoom out
-          handleZoom(false);
-          break;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+
+      const i = Math.floor(y / cellSizeState);
+      const j = Math.floor(x / cellSizeState);
+
+      if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
+        const newGrid = grid.map((row, rowIndex) =>
+          row.map((cell, colIndex) =>
+            rowIndex === i && colIndex === j ? (cell ? 0 : 1) : cell
+          )
+        );
+        setGrid(newGrid);
       }
-    };
+    },
+    [grid, cellSizeState]
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRunning]);
-
-  // Use effect to render the grid whenever it changes
-  useEffect(() => {
-    renderGrid();
-  }, [grid, renderGrid]);
-
-  // Function to handle setting a predefined pattern
-  const setPattern = (patternName: string) => {
-    setGrid(patterns[patternName]);
-    setIsRunning(false);
-    setSelectedPattern(patternName);
-    setGeneration(0);
-  };
-
-  // The optimized simulation function
+  // Define the runSimulation function
   const runSimulation = useCallback(() => {
     setGrid((currentGrid) => {
       // Find the boundaries of live cells
@@ -260,42 +225,39 @@ const GameComponent: React.FC = () => {
     });
   }, [operations]);
 
-  // useEffect to handle starting and stopping the simulation
-  useEffect(() => {
-    if (isRunning) {
-      const id = setInterval(runSimulation, 100);
-      return () => clearInterval(id);
-    }
-  }, [isRunning, runSimulation]);
+  // Now define stepSimulation after runSimulation is defined
+  const stepSimulation = useCallback(() => {
+    runSimulation();
+  }, [runSimulation]);
 
-  // Handle clicking on a cell to toggle its state
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-
-    const i = Math.floor(y / cellSizeState);
-    const j = Math.floor(x / cellSizeState);
-
-    if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
-      const newGrid = grid.map((row, rowIndex) =>
-        row.map((cell, colIndex) =>
-          rowIndex === i && colIndex === j ? (cell ? 0 : 1) : cell
-        )
-      );
-      setGrid(newGrid);
-    }
+  // Add random grid generation
+  const generateRandomGrid = () => {
+    const newGrid = createEmptyGrid().map((row) =>
+      row.map(() => (Math.random() > 0.7 ? 1 : 0))
+    );
+    setGrid(newGrid);
+    setGeneration(0);
   };
 
-  // Handle the start/stop button click
-  const toggleRunning = (): void => {
-    setIsRunning(!isRunning);
+  // Add zoom functionality
+  const handleZoom = (zoomIn: boolean) => {
+    setCellSize((prev) => {
+      const newSize = zoomIn ? prev + 2 : prev - 2;
+      return Math.max(5, Math.min(30, newSize));
+    });
+  };
+
+  // Use effect to render the grid whenever it changes
+  useEffect(() => {
+    renderGrid();
+  }, [grid, renderGrid]);
+
+  // Function to handle setting a predefined pattern
+  const setPattern = (patternName: string) => {
+    setGrid(patterns[patternName]);
+    setIsRunning(false);
+    setSelectedPattern(patternName);
+    setGeneration(0);
   };
 
   // Clear the grid
@@ -304,6 +266,43 @@ const GameComponent: React.FC = () => {
     setIsRunning(false);
     setGeneration(0);
   };
+
+  // Then update the keyboard shortcuts useEffect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case " ": // Space to toggle running
+          setIsRunning((prev) => !prev);
+          break;
+        case "c": // C to clear
+          clearGrid();
+          break;
+        case "r": // R to random
+          generateRandomGrid();
+          break;
+        case "s": // S to step
+          if (!isRunning) stepSimulation();
+          break;
+        case "+": // + to zoom in
+          handleZoom(true);
+          break;
+        case "-": // - to zoom out
+          handleZoom(false);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRunning, stepSimulation]);
+
+  // Update the useEffect for the simulation interval
+  useEffect(() => {
+    if (isRunning) {
+      const id = setInterval(runSimulation, speed);
+      return () => clearInterval(id);
+    }
+  }, [isRunning, runSimulation, speed]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-800 p-4 overflow-hidden">
@@ -323,7 +322,7 @@ const GameComponent: React.FC = () => {
           </button>
         ))}
         <button
-          onClick={toggleRunning}
+          onClick={() => setIsRunning(!isRunning)}
           className={`px-2 py-1 text-sm font-medium text-white rounded m-1 ${
             isRunning ? "bg-red-500" : "bg-green-500"
           } hover:opacity-80`}
