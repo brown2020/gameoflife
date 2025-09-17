@@ -9,27 +9,33 @@ import React, {
   useRef,
 } from "react";
 
-const numRows = 50; // Number of rows for the grid
-const numCols = 50; // Number of columns for the grid
 const cellSize = 20; // Size of each cell in pixels
+const DEFAULT_ROWS = 50;
+const DEFAULT_COLS = 50;
 
 // Type for the grid: a 2D array of numbers
 type Grid = number[][];
 
-// Helper function to create an empty grid
-const createEmptyGrid = (): Grid => {
-  return Array.from({ length: numRows }, () => Array(numCols).fill(0));
+// Helper to create an empty grid with given dimensions
+const createEmptyGrid = (rows: number, cols: number): Grid => {
+  return Array.from({ length: rows }, () => Array(cols).fill(0));
 };
 
 const GameComponent: React.FC = () => {
-  const [grid, setGrid] = useState<Grid>(() => createEmptyGrid());
+  const [grid, setGrid] = useState<Grid>(() =>
+    createEmptyGrid(DEFAULT_ROWS, DEFAULT_COLS)
+  );
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const [tutorialStep, setTutorialStep] = useState<number>(1);
   const [showRules, setShowRules] = useState<boolean>(false);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [generation, setGeneration] = useState<number>(0);
+  const [activeLabel, setActiveLabel] = useState<string | null>(null);
+  const [numRows, setNumRows] = useState<number>(DEFAULT_ROWS);
+  const [numCols, setNumCols] = useState<number>(DEFAULT_COLS);
 
   // Memoize the operations array
   const operations = useMemo(
@@ -64,7 +70,23 @@ const GameComponent: React.FC = () => {
       "A period-2 oscillator that switches between two phases. Resembles a lighthouse.",
     RPentomino:
       "One of the most active small patterns, this R-pentomino evolves for 1103 generations and produces many gliders.",
+    Random:
+      "Randomly generated starting grid. Each click produces a new configuration.",
   };
+
+  // Organize patterns into categories for a cleaner navigation
+  const patternCategories: Record<string, string[]> = useMemo(
+    () => ({
+      Spaceships: ["Glider", "LWSS"],
+      Oscillators: ["Pulsar", "Pentadecathlon", "Toad", "Beacon"],
+      Guns: ["GosperGliderGun"],
+      Methuselahs: ["Diehard", "RPentomino"],
+    }),
+    []
+  );
+
+  const defaultInfoText =
+    "Explore Conway's Game of Life. Select a pattern or generate a random configuration to begin.";
 
   // Add simulation speed control
   const [speed, setSpeed] = useState<number>(100);
@@ -118,7 +140,7 @@ const GameComponent: React.FC = () => {
         );
       }
     }
-  }, [grid, cellSizeState]);
+  }, [grid, cellSizeState, numRows, numCols]);
 
   // Handle clicking on a cell to toggle its state
   const handleCanvasClick = useCallback(
@@ -145,7 +167,7 @@ const GameComponent: React.FC = () => {
         setGrid(newGrid);
       }
     },
-    [grid, cellSizeState]
+    [grid, cellSizeState, numRows, numCols]
   );
 
   // Define the runSimulation function
@@ -223,7 +245,7 @@ const GameComponent: React.FC = () => {
 
       return newGrid;
     });
-  }, [operations]);
+  }, [operations, numRows, numCols]);
 
   // Now define stepSimulation after runSimulation is defined
   const stepSimulation = useCallback(() => {
@@ -231,41 +253,106 @@ const GameComponent: React.FC = () => {
   }, [runSimulation]);
 
   // Add random grid generation
-  const generateRandomGrid = () => {
-    const newGrid = createEmptyGrid().map((row) =>
+  const generateRandomGrid = useCallback(() => {
+    const newGrid = createEmptyGrid(numRows, numCols).map((row) =>
       row.map(() => (Math.random() > 0.7 ? 1 : 0))
     );
     setGrid(newGrid);
     setGeneration(0);
-  };
+    setSelectedPattern(null);
+    setActiveLabel("Random");
+  }, [numRows, numCols]);
 
   // Add zoom functionality
-  const handleZoom = (zoomIn: boolean) => {
+  const handleZoom = useCallback((zoomIn: boolean) => {
     setCellSize((prev) => {
       const newSize = zoomIn ? prev + 2 : prev - 2;
       return Math.max(5, Math.min(30, newSize));
     });
-  };
+  }, []);
 
   // Use effect to render the grid whenever it changes
   useEffect(() => {
     renderGrid();
   }, [grid, renderGrid]);
 
-  // Function to handle setting a predefined pattern
+  // Resize grid to fill available space based on container size and cell size
+  const resizeGridToContainer = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const { width, height } = container.getBoundingClientRect();
+    const nextCols = Math.max(5, Math.ceil(width / cellSizeState));
+    const nextRows = Math.max(5, Math.ceil(height / cellSizeState));
+    if (nextCols === numCols && nextRows === numRows) return;
+
+    setNumCols(nextCols);
+    setNumRows(nextRows);
+
+    setGrid((prev) => {
+      const newGrid = createEmptyGrid(nextRows, nextCols);
+      const copyRows = Math.min(prev.length, nextRows);
+      const copyCols = Math.min(prev[0]?.length ?? 0, nextCols);
+      for (let i = 0; i < copyRows; i++) {
+        for (let j = 0; j < copyCols; j++) {
+          newGrid[i][j] = prev[i][j];
+        }
+      }
+      return newGrid;
+    });
+  }, [cellSizeState, numCols, numRows]);
+
+  // Observe container size and window resizes
+  useEffect(() => {
+    resizeGridToContainer();
+  }, [resizeGridToContainer]);
+
+  useEffect(() => {
+    const handleResize = () => resizeGridToContainer();
+    window.addEventListener("resize", handleResize);
+    let observer: ResizeObserver | null = null;
+    const el = containerRef.current;
+    if (el && typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(() => resizeGridToContainer());
+      observer.observe(el);
+    }
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (observer && el) observer.disconnect();
+    };
+  }, [resizeGridToContainer]);
+
+  // Function to handle setting a predefined pattern (fit into current grid)
   const setPattern = (patternName: string) => {
-    setGrid(patterns[patternName]);
+    const source = patterns[patternName];
+    const newGrid = createEmptyGrid(numRows, numCols);
+    const copyRows = Math.min(source.length, numRows);
+    const copyCols = Math.min(source[0]?.length ?? 0, numCols);
+    for (let i = 0; i < copyRows; i++) {
+      for (let j = 0; j < copyCols; j++) {
+        newGrid[i][j] = source[i][j];
+      }
+    }
+    setGrid(newGrid);
     setIsRunning(false);
     setSelectedPattern(patternName);
+    setActiveLabel(patternName);
     setGeneration(0);
   };
 
+  const handlePatternChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setPattern(value);
+  };
+
   // Clear the grid
-  const clearGrid = (): void => {
-    setGrid(createEmptyGrid());
+  const clearGrid = useCallback((): void => {
+    setGrid(createEmptyGrid(numRows, numCols));
     setIsRunning(false);
     setGeneration(0);
-  };
+    setSelectedPattern(null);
+    setActiveLabel(null);
+  }, [numRows, numCols]);
 
   // Then update the keyboard shortcuts useEffect
   useEffect(() => {
@@ -294,7 +381,7 @@ const GameComponent: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRunning, stepSimulation]);
+  }, [isRunning, stepSimulation, clearGrid, generateRandomGrid, handleZoom]);
 
   // Update the useEffect for the simulation interval
   useEffect(() => {
@@ -304,150 +391,188 @@ const GameComponent: React.FC = () => {
     }
   }, [isRunning, runSimulation, speed]);
 
+  const infoLabel = activeLabel ?? "About";
+  const infoText = activeLabel
+    ? patternInfo[activeLabel] ?? defaultInfoText
+    : defaultInfoText;
+
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-800 p-4 overflow-hidden">
-      <div className="flex mb-4 space-x-2 flex-wrap justify-center">
-        {Object.keys(patterns).map((pattern) => (
-          <button
-            key={pattern}
-            onClick={() => setPattern(pattern)}
-            className={`px-2 py-1 text-sm font-medium text-white rounded-sm m-1 ${
-              selectedPattern === pattern
-                ? "bg-blue-700"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
-            title={patternInfo[pattern]}
-          >
-            {pattern}
-          </button>
-        ))}
-        <button
-          onClick={() => setIsRunning(!isRunning)}
-          className={`px-2 py-1 text-sm font-medium text-white rounded m-1 ${
-            isRunning ? "bg-red-500" : "bg-green-500"
-          } hover:opacity-80`}
-        >
-          {isRunning ? "Stop" : "Start"}
-        </button>
-        <button
-          onClick={stepSimulation}
-          disabled={isRunning}
-          className={`px-2 py-1 text-sm font-medium text-white rounded-sm m-1 ${
-            isRunning
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-500 hover:bg-indigo-600"
-          }`}
-          title="Advance one generation"
-        >
-          Step
-        </button>
-        <button
-          onClick={clearGrid}
-          className="px-2 py-1 text-sm font-medium text-white bg-gray-500 rounded-sm hover:bg-gray-600 m-1"
-        >
-          Clear
-        </button>
-        <button
-          onClick={generateRandomGrid}
-          className="px-2 py-1 text-sm font-medium text-white bg-amber-500 rounded-sm hover:bg-amber-600 m-1"
-        >
-          Random
-        </button>
-        <button
-          onClick={() => {
-            setShowTutorial(true);
-            setTutorialStep(1);
-          }}
-          className="px-2 py-1 text-sm font-medium text-white bg-purple-500 rounded-sm hover:bg-purple-600 m-1"
-        >
-          Tutorial
-        </button>
-        <button
-          onClick={() => setShowRules(!showRules)}
-          className="px-2 py-1 text-sm font-medium text-white bg-gray-500 rounded-sm hover:bg-gray-600 m-1"
-        >
-          {showRules ? "Hide Rules" : "Show Rules"}
-        </button>
+    <div className="min-h-screen w-screen bg-gray-900">
+      <header className="sticky top-0 z-20 w-full border-b border-gray-700 bg-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-gray-800/60">
+        <div className="mx-auto max-w-6xl px-4 py-3">
+          <div className="flex flex-col gap-3">
+            {/* Row 1: Brand/Pattern + Primary Controls */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="text-sm font-semibold tracking-wide text-white">
+                  Game of Life
+                </div>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="pattern" className="text-xs text-gray-300">
+                    Pattern
+                  </label>
+                  <select
+                    id="pattern"
+                    value={selectedPattern ?? ""}
+                    onChange={handlePatternChange}
+                    className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+                    aria-label="Select pattern"
+                  >
+                    <option value="" disabled>
+                      Choose…
+                    </option>
+                    {Object.entries(patternCategories).map(([group, items]) => (
+                      <optgroup key={group} label={group}>
+                        {items.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsRunning(!isRunning)}
+                  className={`px-3 py-1.5 text-xs font-medium text-white rounded w-20 text-center ${
+                    isRunning ? "bg-red-500" : "bg-green-600"
+                  } hover:opacity-90`}
+                  aria-label={
+                    isRunning ? "Stop simulation" : "Start simulation"
+                  }
+                >
+                  {isRunning ? "Stop" : "Start"}
+                </button>
+                <button
+                  onClick={stepSimulation}
+                  disabled={isRunning}
+                  className={`px-3 py-1.5 text-xs font-medium text-white rounded ${
+                    isRunning
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-500"
+                  }`}
+                  title="Advance one generation"
+                >
+                  Step
+                </button>
+                <button
+                  onClick={clearGrid}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-600 rounded hover:bg-gray-500"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={generateRandomGrid}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-500"
+                >
+                  Random
+                </button>
+              </div>
+            </div>
+
+            {/* Row 2: Readouts/Tuners + Help */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-gray-200">
+                  Gen: <span className="font-mono">{generation}</span>
+                  {generation > 0 && (
+                    <button
+                      onClick={() => setGeneration(0)}
+                      className="ml-2 px-1 py-0.5 text-[10px] bg-gray-600 rounded hover:bg-gray-500"
+                      title="Reset generation counter"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-300">Speed</span>
+                  <input
+                    type="range"
+                    min="10"
+                    max="500"
+                    step="10"
+                    value={500 - speed}
+                    onChange={(e) => setSpeed(500 - parseInt(e.target.value))}
+                    className="w-24 accent-blue-500"
+                    aria-label="Simulation speed"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-300">Zoom</span>
+                  <button
+                    onClick={() => handleZoom(false)}
+                    className="px-2 py-1 text-xs font-medium text-white bg-gray-600 rounded hover:bg-gray-500"
+                    title="Zoom out"
+                    aria-label="Zoom out"
+                  >
+                    -
+                  </button>
+                  <span className="text-xs text-gray-300 w-10 text-center">
+                    {cellSizeState}px
+                  </span>
+                  <button
+                    onClick={() => handleZoom(true)}
+                    className="px-2 py-1 text-xs font-medium text-white bg-gray-600 rounded hover:bg-gray-500"
+                    title="Zoom in"
+                    aria-label="Zoom in"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowTutorial(true);
+                    setTutorialStep(1);
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded hover:bg-purple-500"
+                >
+                  Tutorial
+                </button>
+                <button
+                  onClick={() => setShowRules(!showRules)}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-600 rounded hover:bg-gray-500"
+                >
+                  {showRules ? "Hide Rules" : "Show Rules"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Pattern Information Panel (always visible) */}
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="bg-gray-800/70 border border-gray-700 p-3 rounded-md mt-4">
+          <h3 className="text-white text-base font-medium mb-1">{infoLabel}</h3>
+          <p className="text-gray-300 text-xs">{infoText}</p>
+        </div>
       </div>
 
-      {/* Controls Row */}
-      <div className="flex items-center justify-center mb-4 space-x-4">
-        {/* Generation Counter */}
-        <div className="text-white text-center">
-          Generation: <span className="font-mono">{generation}</span>
-          {generation > 0 && (
-            <button
-              onClick={() => setGeneration(0)}
-              className="ml-2 px-1 text-xs bg-gray-600 rounded hover:bg-gray-500"
-              title="Reset generation counter"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-
-        {/* Speed Control */}
-        <div className="flex items-center">
-          <span className="text-white mr-2">Speed:</span>
-          <input
-            type="range"
-            min="10"
-            max="500"
-            step="10"
-            value={500 - speed}
-            onChange={(e) => setSpeed(500 - parseInt(e.target.value))}
-            className="w-24"
+      <main className="mx-auto max-w-6xl p-4">
+        <div
+          ref={containerRef}
+          className="overflow-hidden max-w-full max-h-[78vh] h-[78vh] border border-gray-700 rounded-md bg-gray-900"
+        >
+          <canvas
+            ref={canvasRef}
+            width={numCols * cellSizeState}
+            height={numRows * cellSizeState}
+            onClick={handleCanvasClick}
+            className="cursor-pointer"
           />
         </div>
-
-        {/* Zoom Controls */}
-        <div className="flex items-center">
-          <span className="text-white mr-2">Zoom:</span>
-          <button
-            onClick={() => handleZoom(false)}
-            className="px-2 py-1 text-sm font-medium text-white bg-gray-600 rounded-sm hover:bg-gray-500"
-            title="Zoom out"
-          >
-            -
-          </button>
-          <span className="text-white mx-2">{cellSizeState}px</span>
-          <button
-            onClick={() => handleZoom(true)}
-            className="px-2 py-1 text-sm font-medium text-white bg-gray-600 rounded-sm hover:bg-gray-500"
-            title="Zoom in"
-          >
-            +
-          </button>
+        <div className="text-gray-400 text-xs mt-2 text-center">
+          Keyboard: Space (Start/Stop), C (Clear), R (Random), S (Step), +/−
+          (Zoom)
         </div>
-      </div>
-
-      {/* Pattern Information Panel */}
-      {selectedPattern && patternInfo[selectedPattern] && (
-        <div className="bg-gray-700 p-3 rounded-md mb-4 max-w-2xl mx-auto">
-          <h3 className="text-white text-lg font-medium mb-1">
-            {selectedPattern}
-          </h3>
-          <p className="text-gray-200 text-sm">
-            {patternInfo[selectedPattern]}
-          </p>
-        </div>
-      )}
-
-      <div className="overflow-auto max-w-full max-h-[80vh] border border-gray-700 rounded-md">
-        <canvas
-          ref={canvasRef}
-          width={numCols * cellSizeState}
-          height={numRows * cellSizeState}
-          onClick={handleCanvasClick}
-          className="cursor-pointer"
-        />
-      </div>
-
-      {/* Keyboard Shortcuts Help */}
-      <div className="text-gray-400 text-xs mt-2 text-center">
-        Keyboard shortcuts: Space (Start/Stop), C (Clear), R (Random), S (Step),
-        + (Zoom In), - (Zoom Out)
-      </div>
+      </main>
 
       {/* Rules Modal */}
       {showRules && (

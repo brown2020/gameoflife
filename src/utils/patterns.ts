@@ -1,7 +1,7 @@
 // patterns.ts
 
-const numRows = 50; // Number of rows for the grid
-const numCols = 50; // Number of columns for the grid
+const numRows = 50; // Base template rows (patterns get fitted to current grid)
+const numCols = 50; // Base template cols (patterns get fitted to current grid)
 
 // Type for the grid: a 2D array of numbers
 type Grid = number[][];
