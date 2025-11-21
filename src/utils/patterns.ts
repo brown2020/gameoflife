@@ -1,165 +1,123 @@
 // patterns.ts
 
-const numRows = 50; // Base template rows (patterns get fitted to current grid)
-const numCols = 50; // Base template cols (patterns get fitted to current grid)
+// Type for a pattern: an array of [row, col] coordinates
+export type Pattern = [number, number][];
 
-// Type for the grid: a 2D array of numbers
-type Grid = number[][];
-
-// Helper function to create an empty grid
-const createEmptyGrid = (): Grid => {
-  return Array.from({ length: numRows }, () => Array(numCols).fill(0));
+// Predefined starting states as relative coordinates
+export const patterns: { [key: string]: Pattern } = {
+  Glider: [
+    [1, 2],
+    [2, 3],
+    [3, 1],
+    [3, 2],
+    [3, 3],
+  ],
+  LWSS: [
+    [1, 2],
+    [1, 3],
+    [1, 4],
+    [1, 5],
+    [2, 1],
+    [2, 5],
+    [3, 5],
+    [4, 1],
+    [4, 4],
+  ],
+  Pulsar: [
+    // Top left quadrant
+    [4, 6], [4, 7], [4, 8],
+    [6, 4], [7, 4], [8, 4],
+    [9, 6], [9, 7], [9, 8],
+    [6, 9], [7, 9], [8, 9],
+    // Top right quadrant
+    [4, 12], [4, 13], [4, 14],
+    [6, 11], [7, 11], [8, 11],
+    [9, 12], [9, 13], [9, 14],
+    [6, 16], [7, 16], [8, 16],
+    // Bottom left quadrant
+    [11, 6], [11, 7], [11, 8],
+    [12, 4], [13, 4], [14, 4],
+    [16, 6], [16, 7], [16, 8],
+    [12, 9], [13, 9], [14, 9],
+    // Bottom right quadrant
+    [11, 12], [11, 13], [11, 14],
+    [12, 11], [13, 11], [14, 11],
+    [16, 12], [16, 13], [16, 14],
+    [12, 16], [13, 16], [14, 16],
+  ],
+  GosperGliderGun: [
+    // Left block
+    [5, 1], [5, 2], [6, 1], [6, 2],
+    // Left "hook" shape
+    [3, 13], [3, 14], [4, 12], [4, 16], [5, 11], [5, 17],
+    [6, 11], [6, 15], [6, 17], [6, 18], [7, 11], [7, 17],
+    [8, 12], [8, 16], [9, 13], [9, 14],
+    // Right glider-producing part
+    [1, 25], [2, 23], [2, 25], [3, 21], [3, 22], [4, 21], [4, 22],
+    [5, 21], [5, 22], [6, 23], [6, 25], [7, 25],
+    // Rightmost block
+    [3, 35], [4, 35], [3, 36], [4, 36],
+  ],
+  Diehard: [
+    [20, 22],
+    [21, 16], [21, 17],
+    [22, 17], [22, 21], [22, 22], [22, 23],
+  ],
+  Pentadecathlon: [
+    // First vertical bar
+    [10, 14],
+    [11, 13], [11, 15],
+    [12, 14], [13, 14], [14, 14], [15, 14], [16, 14], [17, 14],
+    [18, 13], [18, 15],
+    [19, 14],
+    // Second vertical bar
+    [10, 24],
+    [11, 23], [11, 25],
+    [12, 24], [13, 24], [14, 24], [15, 24], [16, 24], [17, 24],
+    [18, 23], [18, 25],
+    [19, 24],
+  ],
+  Toad: [
+    [10, 11], [10, 12], [10, 13],
+    [11, 10], [11, 11], [11, 12],
+  ],
+  Beacon: [
+    [10, 10], [10, 11],
+    [11, 10],
+    [12, 13],
+    [13, 12], [13, 13],
+  ],
+  RPentomino: [
+    [20, 21], [20, 22],
+    [21, 20], [21, 21],
+    [22, 21],
+  ],
 };
 
-// Predefined starting states
-export const patterns: { [key: string]: Grid } = {
-  Glider: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      (i === 1 && j === 2) ||
-      (i === 2 && j === 3) ||
-      (i === 3 && j === 1) ||
-      (i === 3 && j === 2) ||
-      (i === 3 && j === 3)
-        ? 1
-        : 0
-    )
-  ),
-  LWSS: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      (i === 1 && j === 2) ||
-      (i === 1 && j === 3) ||
-      (i === 1 && j === 4) ||
-      (i === 1 && j === 5) ||
-      (i === 2 && j === 1) ||
-      (i === 2 && j === 5) ||
-      (i === 3 && j === 5) ||
-      (i === 4 && j === 1) ||
-      (i === 4 && j === 4)
-        ? 1
-        : 0
-    )
-  ),
-  Pulsar: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      ((i === 6 || i === 7 || i === 8 || i === 12 || i === 13 || i === 14) &&
-        (j === 4 || j === 9 || j === 11 || j === 16)) ||
-      ((i === 4 || i === 9 || i === 11 || i === 16) &&
-        (j === 6 || j === 7 || j === 8 || j === 12 || j === 13 || j === 14))
-        ? 1
-        : 0
-    )
-  ),
-  GosperGliderGun: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      // Left block
-      (i === 5 && j === 1) ||
-      (i === 5 && j === 2) ||
-      (i === 6 && j === 1) ||
-      (i === 6 && j === 2) ||
-      // Left "hook" shape
-      (i === 3 && j === 13) ||
-      (i === 3 && j === 14) ||
-      (i === 4 && j === 12) ||
-      (i === 4 && j === 16) ||
-      (i === 5 && j === 11) ||
-      (i === 5 && j === 17) ||
-      (i === 6 && j === 11) ||
-      (i === 6 && j === 15) ||
-      (i === 6 && j === 17) ||
-      (i === 6 && j === 18) ||
-      (i === 7 && j === 11) ||
-      (i === 7 && j === 17) ||
-      (i === 8 && j === 12) ||
-      (i === 8 && j === 16) ||
-      (i === 9 && j === 13) ||
-      (i === 9 && j === 14) ||
-      // Right glider-producing part
-      (i === 1 && j === 25) ||
-      (i === 2 && j === 23) ||
-      (i === 2 && j === 25) ||
-      (i === 3 && j === 21) ||
-      (i === 3 && j === 22) ||
-      (i === 4 && j === 21) ||
-      (i === 4 && j === 22) ||
-      (i === 5 && j === 21) ||
-      (i === 5 && j === 22) ||
-      (i === 6 && j === 23) ||
-      (i === 6 && j === 25) ||
-      (i === 7 && j === 25) ||
-      // Rightmost block
-      (i === 3 && j === 35) ||
-      (i === 4 && j === 35) ||
-      (i === 3 && j === 36) ||
-      (i === 4 && j === 36)
-        ? 1
-        : 0
-    )
-  ),
-  Diehard: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      // Diehard pattern - dies after 130 generations
-      (i === 20 && j === 22) ||
-      (i === 21 && j === 16) ||
-      (i === 21 && j === 17) ||
-      (i === 22 && j === 17) ||
-      (i === 22 && j === 21) ||
-      (i === 22 && j === 22) ||
-      (i === 22 && j === 23)
-        ? 1
-        : 0
-    )
-  ),
-  Pentadecathlon: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      // First vertical bar
-      (i === 10 && j === 14) || // Top single cell
-      (i === 11 && (j === 13 || j === 15)) || // Top double cells
-      (i >= 12 && i <= 17 && j === 14) || // Middle single cells
-      (i === 18 && (j === 13 || j === 15)) || // Bottom double cells
-      (i === 19 && j === 14) || // Bottom single cell
-      // Second vertical bar, 8 cells apart
-      (i === 10 && j === 24) || // Top single cell of the second bar
-      (i === 11 && (j === 23 || j === 25)) || // Top double cells of the second bar
-      (i >= 12 && i <= 17 && j === 24) || // Middle single cells of the second bar
-      (i === 18 && (j === 23 || j === 25)) || // Bottom double cells of the second bar
-      (i === 19 && j === 24) // Bottom single cell of the second bar
-        ? 1
-        : 0
-    )
-  ),
-  Toad: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      (i === 10 && j === 11) ||
-      (i === 10 && j === 12) ||
-      (i === 10 && j === 13) ||
-      (i === 11 && j === 10) ||
-      (i === 11 && j === 11) ||
-      (i === 11 && j === 12)
-        ? 1
-        : 0
-    )
-  ),
-  Beacon: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      (i === 10 && j === 10) ||
-      (i === 10 && j === 11) ||
-      (i === 11 && j === 10) ||
-      (i === 12 && j === 13) ||
-      (i === 13 && j === 12) ||
-      (i === 13 && j === 13)
-        ? 1
-        : 0
-    )
-  ),
-  RPentomino: createEmptyGrid().map((row, i) =>
-    row.map((cell, j) =>
-      (i === 20 && j === 21) ||
-      (i === 20 && j === 22) ||
-      (i === 21 && j === 20) ||
-      (i === 21 && j === 21) ||
-      (i === 22 && j === 21)
-        ? 1
-        : 0
-    )
-  ),
+export const patternInfo: { [key: string]: string } = {
+  Glider:
+    "A small pattern that moves diagonally across the grid. One of the first spaceships discovered.",
+  LWSS: "Lightweight Spaceship - moves horizontally across the grid. Discovered by John Conway in 1970.",
+  Pulsar:
+    "A period-3 oscillator that creates a symmetric pattern. One of the most common oscillators.",
+  GosperGliderGun:
+    "Created by Bill Gosper in 1970, it produces a continuous stream of gliders. The first known pattern with unbounded growth.",
+  Diehard:
+    "A methuselah pattern that disappears after 130 generations. Created by Dean Hickerson in 1991.",
+  Pentadecathlon:
+    "A period-15 oscillator discovered by John Conway. One of the most natural oscillators.",
+  Toad: "A simple period-2 oscillator that alternates between two states. One of the first oscillators discovered.",
+  Beacon:
+    "A period-2 oscillator that switches between two phases. Resembles a lighthouse.",
+  RPentomino:
+    "One of the most active small patterns, this R-pentomino evolves for 1103 generations and produces many gliders.",
+  Random:
+    "Randomly generated starting grid. Each click produces a new configuration.",
+};
+
+export const patternCategories: Record<string, string[]> = {
+  Spaceships: ["Glider", "LWSS"],
+  Oscillators: ["Pulsar", "Pentadecathlon", "Toad", "Beacon"],
+  Guns: ["GosperGliderGun"],
+  Methuselahs: ["Diehard", "RPentomino"],
 };
