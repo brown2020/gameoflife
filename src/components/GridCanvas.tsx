@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Grid } from "@/hooks/useGameOfLife";
 
 interface GridCanvasProps {
@@ -7,6 +7,8 @@ interface GridCanvasProps {
     numRows: number;
     numCols: number;
     onToggleCell: (row: number, col: number) => void;
+    onSetCell: (row: number, col: number, value: number) => void;
+    tool: "pointer" | "draw" | "eraser";
 }
 
 export const GridCanvas: React.FC<GridCanvasProps> = ({
@@ -15,8 +17,13 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
     numRows,
     numCols,
     onToggleCell,
+    onSetCell,
+    tool,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [paintValue, setPaintValue] = useState<number>(1); // 1 for alive, 0 for dead
+    const lastPaintedRef = useRef<{ r: number; c: number } | null>(null);
 
     const renderGrid = useCallback(() => {
         const canvas = canvasRef.current;
@@ -60,9 +67,11 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
         renderGrid();
     }, [renderGrid]);
 
-    const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const getGridCoordinates = (
+        event: React.MouseEvent<HTMLCanvasElement>
+    ): { r: number; c: number } | null => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return null;
 
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -71,10 +80,68 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
         const x = (event.clientX - rect.left) * scaleX;
         const y = (event.clientY - rect.top) * scaleY;
 
-        const i = Math.floor(y / cellSize);
-        const j = Math.floor(x / cellSize);
+        const r = Math.floor(y / cellSize);
+        const c = Math.floor(x / cellSize);
 
-        onToggleCell(i, j);
+        if (r >= 0 && r < numRows && c >= 0 && c < numCols) {
+            return { r, c };
+        }
+        return null;
+    };
+
+    const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const coords = getGridCoordinates(event);
+        if (!coords) return;
+
+        const { r, c } = coords;
+
+        if (tool === "pointer") {
+            // Pointer mode: just toggle on click, no drag painting
+            onToggleCell(r, c);
+            return;
+        }
+
+        // Draw or Eraser mode
+        const valueToSet = tool === "draw" ? 1 : 0;
+
+        setIsDragging(true);
+        setPaintValue(valueToSet);
+        onSetCell(r, c, valueToSet);
+        lastPaintedRef.current = { r, c };
+    };
+
+    const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+        // Pointer mode doesn't drag-paint
+        if (tool === "pointer") return;
+
+        if (!isDragging) return;
+
+        const coords = getGridCoordinates(event);
+        if (!coords) return;
+
+        const { r, c } = coords;
+
+        // Avoid repainting the same cell repeatedly in one move
+        if (
+            lastPaintedRef.current &&
+            lastPaintedRef.current.r === r &&
+            lastPaintedRef.current.c === c
+        ) {
+            return;
+        }
+
+        onSetCell(r, c, paintValue);
+        lastPaintedRef.current = { r, c };
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        lastPaintedRef.current = null;
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        lastPaintedRef.current = null;
     };
 
     return (
@@ -82,7 +149,10 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
             ref={canvasRef}
             width={numCols * cellSize}
             height={numRows * cellSize}
-            onClick={handleCanvasClick}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
             className="cursor-pointer"
         />
     );

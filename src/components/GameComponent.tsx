@@ -29,6 +29,7 @@ const GameComponent: React.FC = () => {
     clearGrid,
     generateRandomGrid,
     toggleCell,
+    setCell,
     containerRef,
     numRows,
     numCols,
@@ -36,6 +37,7 @@ const GameComponent: React.FC = () => {
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const [showRules, setShowRules] = useState<boolean>(false);
+  const [tool, setTool] = useState<"pointer" | "draw" | "eraser">("pointer");
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -97,6 +99,8 @@ const GameComponent: React.FC = () => {
         onShowTutorial={() => setShowTutorial(true)}
         onToggleRules={() => setShowRules(!showRules)}
         showRules={showRules}
+        tool={tool}
+        setTool={setTool}
       />
 
       {/* Pattern Information Panel (always visible) */}
@@ -118,6 +122,8 @@ const GameComponent: React.FC = () => {
             numRows={numRows}
             numCols={numCols}
             onToggleCell={toggleCell}
+            onSetCell={setCell}
+            tool={tool}
           />
         </div>
         <div className="text-gray-400 text-xs mt-2 text-center">

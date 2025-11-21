@@ -18,6 +18,8 @@ interface ControlsProps {
     onShowTutorial: () => void;
     onToggleRules: () => void;
     showRules: boolean;
+    tool: "pointer" | "draw" | "eraser";
+    setTool: (tool: "pointer" | "draw" | "eraser") => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -37,6 +39,8 @@ export const Controls: React.FC<ControlsProps> = ({
     onShowTutorial,
     onToggleRules,
     showRules,
+    tool,
+    setTool,
 }) => {
     return (
         <header className="sticky top-0 z-20 w-full border-b border-gray-700 bg-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-gray-800/60">
@@ -48,6 +52,41 @@ export const Controls: React.FC<ControlsProps> = ({
                             <div className="text-sm font-semibold tracking-wide text-white">
                                 Game of Life
                             </div>
+
+                            {/* Tool Selection */}
+                            <div className="flex items-center bg-gray-700 rounded-md p-0.5 border border-gray-600">
+                                <button
+                                    onClick={() => setTool("pointer")}
+                                    className={`px-2 py-1 text-xs font-medium rounded ${tool === "pointer"
+                                        ? "bg-gray-600 text-white shadow-sm"
+                                        : "text-gray-300 hover:text-white"
+                                        }`}
+                                    title="Pointer: Click to toggle, no drag paint"
+                                >
+                                    Pointer
+                                </button>
+                                <button
+                                    onClick={() => setTool("draw")}
+                                    className={`px-2 py-1 text-xs font-medium rounded ${tool === "draw"
+                                        ? "bg-blue-600 text-white shadow-sm"
+                                        : "text-gray-300 hover:text-white"
+                                        }`}
+                                    title="Draw: Click and drag to paint alive cells"
+                                >
+                                    Draw
+                                </button>
+                                <button
+                                    onClick={() => setTool("eraser")}
+                                    className={`px-2 py-1 text-xs font-medium rounded ${tool === "eraser"
+                                        ? "bg-red-600 text-white shadow-sm"
+                                        : "text-gray-300 hover:text-white"
+                                        }`}
+                                    title="Eraser: Click and drag to erase cells"
+                                >
+                                    Eraser
+                                </button>
+                            </div>
+
                             <div className="flex items-center gap-2">
                                 <label htmlFor="pattern" className="text-xs text-gray-300">
                                     Pattern
@@ -88,8 +127,8 @@ export const Controls: React.FC<ControlsProps> = ({
                                 onClick={stepSimulation}
                                 disabled={isRunning}
                                 className={`px-3 py-1.5 text-xs font-medium text-white rounded ${isRunning
-                                        ? "bg-gray-500 cursor-not-allowed"
-                                        : "bg-indigo-600 hover:bg-indigo-500"
+                                    ? "bg-gray-500 cursor-not-allowed"
+                                    : "bg-indigo-600 hover:bg-indigo-500"
                                     }`}
                                 title="Advance one generation"
                             >

@@ -186,6 +186,26 @@ export const useGameOfLife = () => {
         [numRows, numCols]
     );
 
+    // Set cell to specific value
+    const setCell = useCallback(
+        (i: number, j: number, value: number) => {
+            if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
+                setGrid((prev) => {
+                    // Optimization: don't update if value is same
+                    if (prev[i][j] === value) return prev;
+
+                    const newGrid = prev.map((row, rowIndex) =>
+                        row.map((cell, colIndex) =>
+                            rowIndex === i && colIndex === j ? value : cell
+                        )
+                    );
+                    return newGrid;
+                });
+            }
+        },
+        [numRows, numCols]
+    );
+
     // Zoom
     const handleZoom = useCallback((zoomIn: boolean) => {
         setCellSize((prev) => {
@@ -264,6 +284,7 @@ export const useGameOfLife = () => {
         clearGrid,
         generateRandomGrid,
         toggleCell,
+        setCell,
         containerRef,
         numRows,
         numCols,
