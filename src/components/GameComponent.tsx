@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { useGameOfLife } from "@/hooks/useGameOfLife";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Controls } from "./Controls";
 import { GridCanvas } from "./GridCanvas";
 import { RulesModal } from "./RulesModal";
 import { TutorialModal } from "./TutorialModal";
-import { patternInfo } from "@/utils/patterns";
-
-const defaultInfoText =
-  "Explore Conway's Game of Life. Select a pattern or generate a random configuration to begin.";
+import { InfoPanel } from "./InfoPanel";
+import { Tool } from "@/types/game";
 
 const GameComponent: React.FC = () => {
   const {
@@ -35,50 +34,30 @@ const GameComponent: React.FC = () => {
     numCols,
   } = useGameOfLife();
 
-  const [showTutorial, setShowTutorial] = useState<boolean>(false);
-  const [showRules, setShowRules] = useState<boolean>(false);
-  const [tool, setTool] = useState<"pointer" | "draw" | "eraser">("pointer");
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [tool, setTool] = useState<Tool>("pointer");
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case " ": // Space to toggle running
-          setIsRunning(!isRunning);
-          break;
-        case "c": // C to clear
-          clearGrid();
-          break;
-        case "r": // R to random
-          generateRandomGrid();
-          break;
-        case "s": // S to step
-          if (!isRunning) stepSimulation();
-          break;
-        case "+": // + to zoom in
-          handleZoom(true);
-          break;
-        case "-": // - to zoom out
-          handleZoom(false);
-          break;
-      }
-    };
+  // Keyboard shortcut handlers
+  const toggleRunning = useCallback(
+    () => setIsRunning(!isRunning),
+    [isRunning, setIsRunning]
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
+  useKeyboardShortcuts({
+    toggleRunning,
+    clear: clearGrid,
+    random: generateRandomGrid,
+    step: stepSimulation,
+    zoomIn: () => handleZoom(true),
+    zoomOut: () => handleZoom(false),
     isRunning,
-    setIsRunning,
-    stepSimulation,
-    clearGrid,
-    generateRandomGrid,
-    handleZoom,
-  ]);
+  });
 
-  const infoLabel = activeLabel ?? "About";
-  const infoText = activeLabel
-    ? patternInfo[activeLabel] ?? defaultInfoText
-    : defaultInfoText;
+  const handleShowTutorial = useCallback(() => setShowTutorial(true), []);
+  const handleCloseTutorial = useCallback(() => setShowTutorial(false), []);
+  const handleToggleRules = useCallback(() => setShowRules((s) => !s), []);
+  const handleCloseRules = useCallback(() => setShowRules(false), []);
 
   return (
     <div className="min-h-screen w-screen bg-gray-900">
@@ -96,20 +75,14 @@ const GameComponent: React.FC = () => {
         setSpeed={setSpeed}
         cellSize={cellSize}
         handleZoom={handleZoom}
-        onShowTutorial={() => setShowTutorial(true)}
-        onToggleRules={() => setShowRules(!showRules)}
+        onShowTutorial={handleShowTutorial}
+        onToggleRules={handleToggleRules}
         showRules={showRules}
         tool={tool}
         setTool={setTool}
       />
 
-      {/* Pattern Information Panel (always visible) */}
-      <div className="mx-auto max-w-6xl px-4">
-        <div className="bg-gray-800/70 border border-gray-700 p-3 rounded-md mt-4">
-          <h3 className="text-white text-base font-medium mb-1">{infoLabel}</h3>
-          <p className="text-gray-300 text-xs">{infoText}</p>
-        </div>
-      </div>
+      <InfoPanel activeLabel={activeLabel} />
 
       <main className="mx-auto max-w-6xl p-4">
         <div
@@ -126,16 +99,14 @@ const GameComponent: React.FC = () => {
             tool={tool}
           />
         </div>
-        <div className="text-gray-400 text-xs mt-2 text-center">
+        <p className="text-gray-400 text-xs mt-2 text-center">
           Keyboard: Space (Start/Stop), C (Clear), R (Random), S (Step), +/−
           (Zoom)
-        </div>
+        </p>
       </main>
 
-      {/* Rules Modal */}
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
-
-      {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
+      {showRules && <RulesModal onClose={handleCloseRules} />}
+      {showTutorial && <TutorialModal onClose={handleCloseTutorial} />}
     </div>
   );
 };

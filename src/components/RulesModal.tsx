@@ -1,56 +1,53 @@
 import React from "react";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
 
 interface RulesModalProps {
-    onClose: () => void;
+  onClose: () => void;
 }
 
-export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => {
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg max-w-md">
-                <h2 className="text-white text-xl mb-4">
-                    Conway&apos;s Game of Life Rules
-                </h2>
-                <div className="text-white mb-4">
-                    <p className="mb-2">
-                        Conway&apos;s Game of Life is a cellular automaton where cells live
-                        or die based on their neighbors:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li>
-                            Any live cell with fewer than two live neighbors dies
-                            (underpopulation)
-                        </li>
-                        <li>Any live cell with two or three live neighbors lives on</li>
-                        <li>
-                            Any live cell with more than three live neighbors dies
-                            (overpopulation)
-                        </li>
-                        <li>
-                            Any dead cell with exactly three live neighbors becomes a live
-                            cell (reproduction)
-                        </li>
-                    </ul>
-                </div>
-                <div className="text-white mb-4">
-                    <h3 className="text-lg font-medium mb-2">How to Use:</h3>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li>Click on cells to toggle them between alive and dead</li>
-                        <li>Use the Start/Stop button to control the simulation</li>
-                        <li>Select predefined patterns to see interesting behaviors</li>
-                        <li>Use the Step button to advance one generation at a time</li>
-                        <li>Adjust the speed slider to control simulation speed</li>
-                        <li>Use the zoom controls to adjust the view</li>
-                        <li>Try the Random button to generate random patterns</li>
-                    </ul>
-                </div>
-                <button
-                    onClick={onClose}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    Close
-                </button>
-            </div>
-        </div>
-    );
-};
+const rules = [
+  "Any live cell with fewer than two live neighbors dies (underpopulation)",
+  "Any live cell with two or three live neighbors lives on",
+  "Any live cell with more than three live neighbors dies (overpopulation)",
+  "Any dead cell with exactly three live neighbors becomes a live cell (reproduction)",
+];
+
+const howToUse = [
+  "Click on cells to toggle them between alive and dead",
+  "Use the Start/Stop button to control the simulation",
+  "Select predefined patterns to see interesting behaviors",
+  "Use the Step button to advance one generation at a time",
+  "Adjust the speed slider to control simulation speed",
+  "Use the zoom controls to adjust the view",
+  "Try the Random button to generate random patterns",
+];
+
+export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => (
+  <Modal title="Conway's Game of Life Rules" onClose={onClose}>
+    <div className="text-white mb-4">
+      <p className="mb-2">
+        Conway&apos;s Game of Life is a cellular automaton where cells live or
+        die based on their neighbors:
+      </p>
+      <ul className="list-disc pl-5 space-y-1">
+        {rules.map((rule, i) => (
+          <li key={i}>{rule}</li>
+        ))}
+      </ul>
+    </div>
+
+    <div className="text-white mb-4">
+      <h3 className="text-lg font-medium mb-2">How to Use:</h3>
+      <ul className="list-disc pl-5 space-y-1">
+        {howToUse.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+    </div>
+
+    <Button onClick={onClose} variant="blue">
+      Close
+    </Button>
+  </Modal>
+);

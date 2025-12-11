@@ -1,75 +1,64 @@
-import React, { useRef, useEffect, useCallback, useState } from "react";
-import { Grid } from "@/hooks/useGameOfLife";
+import React, { useRef, useEffect, useCallback, useState, memo } from "react";
+import { Grid, Tool } from "@/types/game";
+import { COLORS } from "@/constants/game";
 
 interface GridCanvasProps {
-    grid: Grid;
-    cellSize: number;
-    numRows: number;
-    numCols: number;
-    onToggleCell: (row: number, col: number) => void;
-    onSetCell: (row: number, col: number, value: number) => void;
-    tool: "pointer" | "draw" | "eraser";
+  grid: Grid;
+  cellSize: number;
+  numRows: number;
+  numCols: number;
+  onToggleCell: (row: number, col: number) => void;
+  onSetCell: (row: number, col: number, value: number) => void;
+  tool: Tool;
 }
 
-export const GridCanvas: React.FC<GridCanvasProps> = ({
-    grid,
-    cellSize,
-    numRows,
-    numCols,
-    onToggleCell,
-    onSetCell,
-    tool,
-}) => {
+export const GridCanvas = memo<GridCanvasProps>(
+  ({ grid, cellSize, numRows, numCols, onToggleCell, onSetCell, tool }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [paintValue, setPaintValue] = useState<number>(1); // 1 for alive, 0 for dead
+    const [paintValue, setPaintValue] = useState(1);
     const lastPaintedRef = useRef<{ r: number; c: number } | null>(null);
 
     const renderGrid = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw the grid
-        for (let i = 0; i < numRows; i++) {
-            for (let j = 0; j < numCols; j++) {
-                // Fill cell with gradient for live cells
-                if (grid[i][j]) {
-                    const gradient = ctx.createRadialGradient(
-                        j * cellSize + cellSize / 2,
-                        i * cellSize + cellSize / 2,
-                        0,
-                        j * cellSize + cellSize / 2,
-                        i * cellSize + cellSize / 2,
-                        cellSize / 1.5
-                    );
-                    gradient.addColorStop(0, "#4ade80");
-                    gradient.addColorStop(1, "#22c55e");
-                    ctx.fillStyle = gradient;
-                } else {
-                    ctx.fillStyle = "#111827";
-                }
-                ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+      // Pre-set styles for better performance
+      const aliveColor = COLORS.CELL_ALIVE;
+      const deadColor = COLORS.CELL_DEAD;
+      const gridColor = COLORS.GRID_LINE;
 
-                // Draw cell border
-                ctx.strokeStyle = "#374151";
-                ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
-            }
+      // Draw cells
+      for (let i = 0; i < numRows; i++) {
+        for (let j = 0; j < numCols; j++) {
+          const x = j * cellSize;
+          const y = i * cellSize;
+
+          // Fill cell (solid color for performance)
+          ctx.fillStyle = grid[i][j] ? aliveColor : deadColor;
+          ctx.fillRect(x, y, cellSize, cellSize);
+
+          // Draw border
+          ctx.strokeStyle = gridColor;
+          ctx.strokeRect(x, y, cellSize, cellSize);
         }
+      }
     }, [grid, cellSize, numRows, numCols]);
 
     useEffect(() => {
-        renderGrid();
+      renderGrid();
     }, [renderGrid]);
 
-    const getGridCoordinates = (
+    const getGridCoordinates = useCallback(
+      (
         event: React.MouseEvent<HTMLCanvasElement>
-    ): { r: number; c: number } | null => {
+      ): { r: number; c: number } | null => {
         const canvas = canvasRef.current;
         if (!canvas) return null;
 
@@ -84,76 +73,81 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
         const c = Math.floor(x / cellSize);
 
         if (r >= 0 && r < numRows && c >= 0 && c < numCols) {
-            return { r, c };
+          return { r, c };
         }
         return null;
-    };
+      },
+      [cellSize, numRows, numCols]
+    );
 
-    const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleMouseDown = useCallback(
+      (event: React.MouseEvent<HTMLCanvasElement>) => {
         const coords = getGridCoordinates(event);
         if (!coords) return;
 
         const { r, c } = coords;
 
         if (tool === "pointer") {
-            // Pointer mode: just toggle on click, no drag painting
-            onToggleCell(r, c);
-            return;
+          onToggleCell(r, c);
+          return;
         }
 
         // Draw or Eraser mode
         const valueToSet = tool === "draw" ? 1 : 0;
-
         setIsDragging(true);
         setPaintValue(valueToSet);
         onSetCell(r, c, valueToSet);
         lastPaintedRef.current = { r, c };
-    };
+      },
+      [tool, getGridCoordinates, onToggleCell, onSetCell]
+    );
 
-    const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-        // Pointer mode doesn't drag-paint
-        if (tool === "pointer") return;
-
-        if (!isDragging) return;
+    const handleMouseMove = useCallback(
+      (event: React.MouseEvent<HTMLCanvasElement>) => {
+        if (tool === "pointer" || !isDragging) return;
 
         const coords = getGridCoordinates(event);
         if (!coords) return;
 
         const { r, c } = coords;
 
-        // Avoid repainting the same cell repeatedly in one move
+        // Skip if same cell as last painted
         if (
-            lastPaintedRef.current &&
-            lastPaintedRef.current.r === r &&
-            lastPaintedRef.current.c === c
+          lastPaintedRef.current?.r === r &&
+          lastPaintedRef.current?.c === c
         ) {
-            return;
+          return;
         }
 
         onSetCell(r, c, paintValue);
         lastPaintedRef.current = { r, c };
-    };
+      },
+      [tool, isDragging, getGridCoordinates, onSetCell, paintValue]
+    );
 
-    const handleMouseUp = () => {
-        setIsDragging(false);
-        lastPaintedRef.current = null;
-    };
+    const handleMouseUp = useCallback(() => {
+      setIsDragging(false);
+      lastPaintedRef.current = null;
+    }, []);
 
-    const handleMouseLeave = () => {
-        setIsDragging(false);
-        lastPaintedRef.current = null;
-    };
+    const handleMouseLeave = useCallback(() => {
+      setIsDragging(false);
+      lastPaintedRef.current = null;
+    }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            width={numCols * cellSize}
-            height={numRows * cellSize}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            className="cursor-pointer"
-        />
+      <canvas
+        ref={canvasRef}
+        width={numCols * cellSize}
+        height={numRows * cellSize}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        className="cursor-pointer"
+      />
     );
-};
+  }
+);
+
+GridCanvas.displayName = "GridCanvas";
