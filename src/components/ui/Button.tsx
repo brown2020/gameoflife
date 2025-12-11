@@ -25,16 +25,22 @@ export const Button = memo<ButtonProps>(
     fixedWidth,
     children,
     ...props
-  }) => (
-    <button
-      className={`px-3 py-1.5 text-xs font-medium text-white rounded ${
-        variants[variant]
-      } ${fixedWidth ?? ""} ${className}`.trim()}
-      {...props}
-    >
-      {children}
-    </button>
-  )
+  }) => {
+    const classes = [
+      "px-3 py-1.5 text-xs font-medium text-white rounded",
+      variants[variant],
+      fixedWidth,
+      className,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <button className={classes} {...props}>
+        {children}
+      </button>
+    );
+  }
 );
 
 Button.displayName = "Button";

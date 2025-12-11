@@ -23,11 +23,14 @@ export const Modal = memo<ModalProps>(({ children, title, onClose }) => {
   }, [handleKeyDown]);
 
   // Close on backdrop click
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
   return (
     <div

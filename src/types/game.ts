@@ -5,8 +5,11 @@
 /** Tool types for grid interaction */
 export type Tool = "pointer" | "draw" | "eraser";
 
-/** Grid representation as a 2D array of cell states (0 = dead, 1 = alive) */
-export type Grid = number[][];
+/** Cell state: 0 = dead, 1 = alive */
+export type CellState = 0 | 1;
+
+/** Grid representation as a 2D array of cell states */
+export type Grid = CellState[][];
 
 /** Coordinate tuple for patterns */
 export type Coordinate = [number, number];
@@ -16,3 +19,6 @@ export type Pattern = Coordinate[];
 
 /** Neighbor offset for calculating adjacent cells */
 export type NeighborOffset = readonly [number, number];
+
+/** Modal types for the game */
+export type ModalType = "rules" | "tutorial" | null;

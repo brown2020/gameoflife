@@ -1,12 +1,12 @@
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { patternCategories } from "@/utils/patterns";
 import { Button } from "./ui/Button";
 import { Tool } from "@/types/game";
-import { SPEED } from "@/constants/game";
+import { SPEED, TOOL_CONFIG } from "@/constants/game";
 
 interface ControlsProps {
   isRunning: boolean;
-  setIsRunning: (isRunning: boolean) => void;
+  toggleRunning: () => void;
   stepSimulation: () => void;
   clearGrid: () => void;
   generateRandomGrid: () => void;
@@ -17,7 +17,8 @@ interface ControlsProps {
   speed: number;
   setSpeed: (speed: number) => void;
   cellSize: number;
-  handleZoom: (zoomIn: boolean) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
   onShowTutorial: () => void;
   onToggleRules: () => void;
   showRules: boolean;
@@ -25,31 +26,10 @@ interface ControlsProps {
   setTool: (tool: Tool) => void;
 }
 
-const toolConfig = [
-  {
-    id: "pointer" as const,
-    label: "Pointer",
-    activeClass: "bg-gray-600",
-    title: "Click to toggle, no drag paint",
-  },
-  {
-    id: "draw" as const,
-    label: "Draw",
-    activeClass: "bg-blue-600",
-    title: "Click and drag to paint alive cells",
-  },
-  {
-    id: "eraser" as const,
-    label: "Eraser",
-    activeClass: "bg-red-600",
-    title: "Click and drag to erase cells",
-  },
-];
-
 export const Controls = memo<ControlsProps>(
   ({
     isRunning,
-    setIsRunning,
+    toggleRunning,
     stepSimulation,
     clearGrid,
     generateRandomGrid,
@@ -60,16 +40,25 @@ export const Controls = memo<ControlsProps>(
     speed,
     setSpeed,
     cellSize,
-    handleZoom,
+    zoomIn,
+    zoomOut,
     onShowTutorial,
     onToggleRules,
     showRules,
     tool,
     setTool,
   }) => {
-    const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSpeed(SPEED.MAX - parseInt(e.target.value));
-    };
+    const handleSpeedChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSpeed(SPEED.MAX - parseInt(e.target.value, 10));
+      },
+      [setSpeed]
+    );
+
+    const handleResetGeneration = useCallback(
+      () => setGeneration(0),
+      [setGeneration]
+    );
 
     return (
       <header className="sticky top-0 z-20 w-full border-b border-gray-700 bg-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-gray-800/60">
@@ -84,7 +73,7 @@ export const Controls = memo<ControlsProps>(
 
                 {/* Tool Selection */}
                 <div className="flex items-center bg-gray-700 rounded-md p-0.5 border border-gray-600">
-                  {toolConfig.map(({ id, label, activeClass, title }) => (
+                  {TOOL_CONFIG.map(({ id, label, activeClass, title }) => (
                     <button
                       key={id}
                       onClick={() => setTool(id)}
@@ -129,7 +118,7 @@ export const Controls = memo<ControlsProps>(
 
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsRunning(!isRunning)}
+                  onClick={toggleRunning}
                   variant={isRunning ? "danger" : "primary"}
                   fixedWidth="w-20"
                   className="text-center"
@@ -162,7 +151,7 @@ export const Controls = memo<ControlsProps>(
                   Gen: <span className="font-mono">{generation}</span>
                   {generation > 0 && (
                     <button
-                      onClick={() => setGeneration(0)}
+                      onClick={handleResetGeneration}
                       className="ml-2 px-1 py-0.5 text-[10px] bg-gray-600 rounded hover:bg-gray-500"
                       title="Reset generation counter"
                     >
@@ -188,7 +177,7 @@ export const Controls = memo<ControlsProps>(
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-gray-300">Zoom</span>
                   <Button
-                    onClick={() => handleZoom(false)}
+                    onClick={zoomOut}
                     title="Zoom out"
                     aria-label="Zoom out"
                   >
@@ -197,11 +186,7 @@ export const Controls = memo<ControlsProps>(
                   <span className="text-xs text-gray-300 w-10 text-center">
                     {cellSize}px
                   </span>
-                  <Button
-                    onClick={() => handleZoom(true)}
-                    title="Zoom in"
-                    aria-label="Zoom in"
-                  >
+                  <Button onClick={zoomIn} title="Zoom in" aria-label="Zoom in">
                     +
                   </Button>
                 </div>

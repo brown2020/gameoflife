@@ -1,3 +1,5 @@
+import { Tool } from "@/types/game";
+
 /**
  * Game constants and configuration values
  */
@@ -46,3 +48,30 @@ export const NEIGHBOR_OFFSETS = [
 
 /** Random grid density (probability of a cell being alive) */
 export const RANDOM_DENSITY = 0.3;
+
+/** Tool configuration for UI rendering */
+export const TOOL_CONFIG: ReadonlyArray<{
+  id: Tool;
+  label: string;
+  activeClass: string;
+  title: string;
+}> = [
+  {
+    id: "pointer",
+    label: "Pointer",
+    activeClass: "bg-gray-600",
+    title: "Click to toggle, no drag paint",
+  },
+  {
+    id: "draw",
+    label: "Draw",
+    activeClass: "bg-blue-600",
+    title: "Click and drag to paint alive cells",
+  },
+  {
+    id: "eraser",
+    label: "Eraser",
+    activeClass: "bg-red-600",
+    title: "Click and drag to erase cells",
+  },
+] as const;

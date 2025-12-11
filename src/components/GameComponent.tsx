@@ -8,7 +8,7 @@ import { GridCanvas } from "./GridCanvas";
 import { RulesModal } from "./RulesModal";
 import { TutorialModal } from "./TutorialModal";
 import { InfoPanel } from "./InfoPanel";
-import { Tool } from "@/types/game";
+import { Tool, ModalType } from "@/types/game";
 
 const GameComponent: React.FC = () => {
   const {
@@ -34,9 +34,8 @@ const GameComponent: React.FC = () => {
     numCols,
   } = useGameOfLife();
 
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [showRules, setShowRules] = useState(false);
   const [tool, setTool] = useState<Tool>("pointer");
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
 
   // Use functional update to avoid dependency on isRunning
   const toggleRunning = useCallback(
@@ -72,16 +71,16 @@ const GameComponent: React.FC = () => {
 
   useKeyboardShortcuts(keyboardActions);
 
-  const handleShowTutorial = useCallback(() => setShowTutorial(true), []);
-  const handleCloseTutorial = useCallback(() => setShowTutorial(false), []);
-  const handleToggleRules = useCallback(() => setShowRules((s) => !s), []);
-  const handleCloseRules = useCallback(() => setShowRules(false), []);
+  // Consolidated modal handlers
+  const openTutorial = useCallback(() => setActiveModal("tutorial"), []);
+  const openRules = useCallback(() => setActiveModal("rules"), []);
+  const closeModal = useCallback(() => setActiveModal(null), []);
 
   return (
     <div className="min-h-screen w-screen bg-gray-900">
       <Controls
         isRunning={isRunning}
-        setIsRunning={setIsRunning}
+        toggleRunning={toggleRunning}
         stepSimulation={stepSimulation}
         clearGrid={clearGrid}
         generateRandomGrid={generateRandomGrid}
@@ -92,10 +91,11 @@ const GameComponent: React.FC = () => {
         speed={speed}
         setSpeed={setSpeed}
         cellSize={cellSize}
-        handleZoom={handleZoom}
-        onShowTutorial={handleShowTutorial}
-        onToggleRules={handleToggleRules}
-        showRules={showRules}
+        zoomIn={zoomIn}
+        zoomOut={zoomOut}
+        onShowTutorial={openTutorial}
+        onToggleRules={openRules}
+        showRules={activeModal === "rules"}
         tool={tool}
         setTool={setTool}
       />
@@ -123,8 +123,8 @@ const GameComponent: React.FC = () => {
         </p>
       </main>
 
-      {showRules && <RulesModal onClose={handleCloseRules} />}
-      {showTutorial && <TutorialModal onClose={handleCloseTutorial} />}
+      {activeModal === "rules" && <RulesModal onClose={closeModal} />}
+      {activeModal === "tutorial" && <TutorialModal onClose={closeModal} />}
     </div>
   );
 };

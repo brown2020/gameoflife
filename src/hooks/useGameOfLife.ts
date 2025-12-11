@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { patterns } from "@/utils/patterns";
-import { Grid } from "@/types/game";
+import { Grid, CellState } from "@/types/game";
 import {
   GRID,
   CELL_SIZE,
@@ -8,10 +8,12 @@ import {
   NEIGHBOR_OFFSETS,
   RANDOM_DENSITY,
 } from "@/constants/game";
-
-/** Helper to create an empty grid with given dimensions */
-const createEmptyGrid = (rows: number, cols: number): Grid =>
-  Array.from({ length: rows }, () => Array(cols).fill(0));
+import {
+  createEmptyGrid,
+  copyGrid,
+  updateCell,
+  toggleCell as toggleCellUtil,
+} from "@/utils/grid";
 
 export const useGameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(() =>
@@ -28,7 +30,7 @@ export const useGameOfLife = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  /** Run one step of the simulation */
+  /** Run one step of the simulation with optimized change detection */
   const runSimulation = useCallback(() => {
     setGrid((currentGrid) => {
       // Find boundaries of live cells for optimization
@@ -62,9 +64,11 @@ export const useGameOfLife = () => {
       maxCol = Math.min(numCols - 1, maxCol + 1);
 
       // Create new grid with shallow row copies
-      const newGrid = currentGrid.map((row) => [...row]);
+      const newGrid = copyGrid(currentGrid);
 
-      // Process only cells within active area
+      // Process cells within active area, tracking changes in single pass
+      let hasChanged = false;
+
       for (let i = minRow; i <= maxRow; i++) {
         for (let j = minCol; j <= maxCol; j++) {
           let neighbors = 0;
@@ -77,30 +81,28 @@ export const useGameOfLife = () => {
             }
           }
 
-          if (neighbors < 2 || neighbors > 3) {
-            newGrid[i][j] = 0;
-          } else if (currentGrid[i][j] === 0 && neighbors === 3) {
-            newGrid[i][j] = 1;
-          }
-        }
-      }
+          const current = currentGrid[i][j];
+          let next: CellState = current;
 
-      // Check if grid has changed (stable state detection)
-      let hasChanged = false;
-      for (let i = minRow; i <= maxRow && !hasChanged; i++) {
-        for (let j = minCol; j <= maxCol && !hasChanged; j++) {
-          if (currentGrid[i][j] !== newGrid[i][j]) {
+          if (neighbors < 2 || neighbors > 3) {
+            next = 0;
+          } else if (current === 0 && neighbors === 3) {
+            next = 1;
+          }
+
+          if (next !== current) {
             hasChanged = true;
+            newGrid[i][j] = next;
           }
         }
       }
 
       if (!hasChanged) {
         setIsRunning(false);
-      } else {
-        setGeneration((prev) => prev + 1);
+        return currentGrid; // Return original to avoid unnecessary re-render
       }
 
+      setGeneration((prev) => prev + 1);
       return newGrid;
     });
   }, [numRows, numCols]);
@@ -117,7 +119,7 @@ export const useGameOfLife = () => {
   /** Generate a random grid */
   const generateRandomGrid = useCallback(() => {
     const newGrid = createEmptyGrid(numRows, numCols).map((row) =>
-      row.map(() => (Math.random() > 1 - RANDOM_DENSITY ? 1 : 0))
+      row.map(() => (Math.random() > 1 - RANDOM_DENSITY ? 1 : 0) as CellState)
     );
     setGrid(newGrid);
     setGeneration(0);
@@ -148,32 +150,21 @@ export const useGameOfLife = () => {
     [numRows, numCols]
   );
 
-  /** Toggle a single cell (efficient single-cell update) */
+  /** Toggle a single cell */
   const toggleCell = useCallback(
     (i: number, j: number) => {
       if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
-        setGrid((prev) => {
-          const newGrid = prev.map((row) => [...row]);
-          newGrid[i][j] = prev[i][j] ? 0 : 1;
-          return newGrid;
-        });
+        setGrid((prev) => toggleCellUtil(prev, i, j));
       }
     },
     [numRows, numCols]
   );
 
-  /** Set a cell to a specific value (efficient single-cell update) */
+  /** Set a cell to a specific value */
   const setCell = useCallback(
-    (i: number, j: number, value: number) => {
+    (i: number, j: number, value: CellState) => {
       if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
-        setGrid((prev) => {
-          // Skip update if value unchanged
-          if (prev[i][j] === value) return prev;
-
-          const newGrid = prev.map((row) => [...row]);
-          newGrid[i][j] = value;
-          return newGrid;
-        });
+        setGrid((prev) => updateCell(prev, i, j, value));
       }
     },
     [numRows, numCols]

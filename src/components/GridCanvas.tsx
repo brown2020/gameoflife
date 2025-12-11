@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState, memo } from "react";
-import { Grid, Tool } from "@/types/game";
+import { Grid, Tool, CellState } from "@/types/game";
 import { COLORS } from "@/constants/game";
 
 interface GridCanvasProps {
@@ -8,7 +8,7 @@ interface GridCanvasProps {
   numRows: number;
   numCols: number;
   onToggleCell: (row: number, col: number) => void;
-  onSetCell: (row: number, col: number, value: number) => void;
+  onSetCell: (row: number, col: number, value: CellState) => void;
   tool: Tool;
 }
 
@@ -17,42 +17,56 @@ export const GridCanvas = memo<GridCanvasProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [paintValue, setPaintValue] = useState(1);
     const lastPaintedRef = useRef<{ r: number; c: number } | null>(null);
+
+    // Derive paint value from tool (stable reference via ref)
+    const paintValueRef = useRef<CellState>(tool === "draw" ? 1 : 0);
+    paintValueRef.current = tool === "draw" ? 1 : 0;
 
     // Cache 2D context on mount and when canvas changes
     useEffect(() => {
       ctxRef.current = canvasRef.current?.getContext("2d") ?? null;
     }, []);
 
+    // Optimized batched rendering
     const renderGrid = useCallback(() => {
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
       if (!canvas || !ctx) return;
 
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const width = numCols * cellSize;
+      const height = numRows * cellSize;
 
-      // Pre-set styles for better performance
-      const aliveColor = COLORS.CELL_ALIVE;
-      const deadColor = COLORS.CELL_DEAD;
-      const gridColor = COLORS.GRID_LINE;
+      // Fill background (dead cells) in one call
+      ctx.fillStyle = COLORS.CELL_DEAD;
+      ctx.fillRect(0, 0, width, height);
 
-      // Draw cells
+      // Batch all alive cells into a single path
+      ctx.fillStyle = COLORS.CELL_ALIVE;
+      ctx.beginPath();
       for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
-          const x = j * cellSize;
-          const y = i * cellSize;
-
-          // Fill cell (solid color for performance)
-          ctx.fillStyle = grid[i][j] ? aliveColor : deadColor;
-          ctx.fillRect(x, y, cellSize, cellSize);
-
-          // Draw border
-          ctx.strokeStyle = gridColor;
-          ctx.strokeRect(x, y, cellSize, cellSize);
+          if (grid[i][j]) {
+            ctx.rect(j * cellSize, i * cellSize, cellSize, cellSize);
+          }
         }
       }
+      ctx.fill();
+
+      // Draw grid lines in two batched operations
+      ctx.strokeStyle = COLORS.GRID_LINE;
+      ctx.beginPath();
+      // Vertical lines
+      for (let x = 0; x <= width; x += cellSize) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+      }
+      // Horizontal lines
+      for (let y = 0; y <= height; y += cellSize) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+      ctx.stroke();
     }, [grid, cellSize, numRows, numCols]);
 
     useEffect(() => {
@@ -97,10 +111,8 @@ export const GridCanvas = memo<GridCanvasProps>(
         }
 
         // Draw or Eraser mode
-        const valueToSet = tool === "draw" ? 1 : 0;
         setIsDragging(true);
-        setPaintValue(valueToSet);
-        onSetCell(r, c, valueToSet);
+        onSetCell(r, c, paintValueRef.current);
         lastPaintedRef.current = { r, c };
       },
       [tool, getGridCoordinates, onToggleCell, onSetCell]
@@ -123,10 +135,10 @@ export const GridCanvas = memo<GridCanvasProps>(
           return;
         }
 
-        onSetCell(r, c, paintValue);
+        onSetCell(r, c, paintValueRef.current);
         lastPaintedRef.current = { r, c };
       },
-      [tool, isDragging, getGridCoordinates, onSetCell, paintValue]
+      [tool, isDragging, getGridCoordinates, onSetCell]
     );
 
     // Combined handler for mouse up and leave (identical behavior)

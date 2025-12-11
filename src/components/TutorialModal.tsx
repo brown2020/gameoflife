@@ -6,9 +6,12 @@ interface TutorialModalProps {
   onClose: () => void;
 }
 
-const tutorialSteps = [
+interface TutorialStep {
+  content: React.ReactNode;
+}
+
+const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
-    title: "Welcome!",
     content: (
       <>
         <p className="mb-2">Welcome to Conway&apos;s Game of Life!</p>
@@ -20,7 +23,6 @@ const tutorialSteps = [
     ),
   },
   {
-    title: "The Grid",
     content: (
       <>
         <p className="mb-2">
@@ -32,7 +34,6 @@ const tutorialSteps = [
     ),
   },
   {
-    title: "Patterns",
     content: (
       <>
         <p className="mb-2">
@@ -44,7 +45,6 @@ const tutorialSteps = [
     ),
   },
   {
-    title: "Running",
     content: (
       <>
         <p className="mb-2">
@@ -55,7 +55,6 @@ const tutorialSteps = [
     ),
   },
   {
-    title: "Ready!",
     content: (
       <>
         <p className="mb-2">You&apos;re all set to explore the Game of Life!</p>
@@ -68,7 +67,7 @@ const tutorialSteps = [
   },
 ];
 
-const TOTAL_STEPS = tutorialSteps.length;
+const TOTAL_STEPS = TUTORIAL_STEPS.length;
 
 export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
   const [step, setStep] = useState(0);
@@ -84,7 +83,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
 
   return (
     <Modal title="Game of Life Tutorial" onClose={onClose}>
-      <div className="text-white mb-4">{tutorialSteps[step].content}</div>
+      <div className="text-white mb-4">{TUTORIAL_STEPS[step].content}</div>
 
       <div className="flex justify-between items-center mt-4">
         <div>
