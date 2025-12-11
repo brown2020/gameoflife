@@ -105,11 +105,6 @@ export const useGameOfLife = () => {
     });
   }, [numRows, numCols]);
 
-  /** Step one generation manually */
-  const stepSimulation = useCallback(() => {
-    runSimulation();
-  }, [runSimulation]);
-
   /** Clear the grid and reset state */
   const clearGrid = useCallback(() => {
     setGrid(createEmptyGrid(numRows, numCols));
@@ -262,7 +257,7 @@ export const useGameOfLife = () => {
     selectedPattern,
     activeLabel,
     setPattern,
-    stepSimulation,
+    stepSimulation: runSimulation,
     clearGrid,
     generateRandomGrid,
     toggleCell,

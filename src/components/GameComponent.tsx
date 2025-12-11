@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useGameOfLife } from "@/hooks/useGameOfLife";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Controls } from "./Controls";
@@ -38,21 +38,39 @@ const GameComponent: React.FC = () => {
   const [showRules, setShowRules] = useState(false);
   const [tool, setTool] = useState<Tool>("pointer");
 
-  // Keyboard shortcut handlers
+  // Use functional update to avoid dependency on isRunning
   const toggleRunning = useCallback(
-    () => setIsRunning(!isRunning),
-    [isRunning, setIsRunning]
+    () => setIsRunning((prev) => !prev),
+    [setIsRunning]
   );
 
-  useKeyboardShortcuts({
-    toggleRunning,
-    clear: clearGrid,
-    random: generateRandomGrid,
-    step: stepSimulation,
-    zoomIn: () => handleZoom(true),
-    zoomOut: () => handleZoom(false),
-    isRunning,
-  });
+  // Memoize zoom callbacks to avoid creating new functions each render
+  const zoomIn = useCallback(() => handleZoom(true), [handleZoom]);
+  const zoomOut = useCallback(() => handleZoom(false), [handleZoom]);
+
+  // Memoize keyboard shortcut actions object
+  const keyboardActions = useMemo(
+    () => ({
+      toggleRunning,
+      clear: clearGrid,
+      random: generateRandomGrid,
+      step: stepSimulation,
+      zoomIn,
+      zoomOut,
+      isRunning,
+    }),
+    [
+      toggleRunning,
+      clearGrid,
+      generateRandomGrid,
+      stepSimulation,
+      zoomIn,
+      zoomOut,
+      isRunning,
+    ]
+  );
+
+  useKeyboardShortcuts(keyboardActions);
 
   const handleShowTutorial = useCallback(() => setShowTutorial(true), []);
   const handleCloseTutorial = useCallback(() => setShowTutorial(false), []);

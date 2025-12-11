@@ -15,16 +15,20 @@ interface GridCanvasProps {
 export const GridCanvas = memo<GridCanvasProps>(
   ({ grid, cellSize, numRows, numCols, onToggleCell, onSetCell, tool }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [paintValue, setPaintValue] = useState(1);
     const lastPaintedRef = useRef<{ r: number; c: number } | null>(null);
 
+    // Cache 2D context on mount and when canvas changes
+    useEffect(() => {
+      ctxRef.current = canvasRef.current?.getContext("2d") ?? null;
+    }, []);
+
     const renderGrid = useCallback(() => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      const ctx = ctxRef.current;
+      if (!canvas || !ctx) return;
 
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -125,12 +129,8 @@ export const GridCanvas = memo<GridCanvasProps>(
       [tool, isDragging, getGridCoordinates, onSetCell, paintValue]
     );
 
-    const handleMouseUp = useCallback(() => {
-      setIsDragging(false);
-      lastPaintedRef.current = null;
-    }, []);
-
-    const handleMouseLeave = useCallback(() => {
+    // Combined handler for mouse up and leave (identical behavior)
+    const handleMouseEnd = useCallback(() => {
       setIsDragging(false);
       lastPaintedRef.current = null;
     }, []);
@@ -142,8 +142,8 @@ export const GridCanvas = memo<GridCanvasProps>(
         height={numRows * cellSize}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseEnd}
+        onMouseLeave={handleMouseEnd}
         className="cursor-pointer"
       />
     );
