@@ -16,7 +16,7 @@ const GameComponent: React.FC = () => {
     isRunning,
     setIsRunning,
     generation,
-    setGeneration,
+    resetGeneration,
     speed,
     setSpeed,
     cellSize,
@@ -71,10 +71,23 @@ const GameComponent: React.FC = () => {
 
   useKeyboardShortcuts(keyboardActions);
 
-  // Consolidated modal handlers
-  const openTutorial = useCallback(() => setActiveModal("tutorial"), []);
-  const openRules = useCallback(() => setActiveModal("rules"), []);
-  const closeModal = useCallback(() => setActiveModal(null), []);
+  // Modal handler factory - creates stable callbacks for each modal type
+  const createModalHandler = useCallback(
+    (modal: ModalType) => () => setActiveModal(modal),
+    []
+  );
+  const openTutorial = useMemo(
+    () => createModalHandler("tutorial"),
+    [createModalHandler]
+  );
+  const openRules = useMemo(
+    () => createModalHandler("rules"),
+    [createModalHandler]
+  );
+  const closeModal = useMemo(
+    () => createModalHandler(null),
+    [createModalHandler]
+  );
 
   return (
     <div className="min-h-screen w-screen bg-gray-900">
@@ -87,15 +100,14 @@ const GameComponent: React.FC = () => {
         selectedPattern={selectedPattern}
         onPatternChange={setPattern}
         generation={generation}
-        setGeneration={setGeneration}
+        resetGeneration={resetGeneration}
         speed={speed}
         setSpeed={setSpeed}
         cellSize={cellSize}
         zoomIn={zoomIn}
         zoomOut={zoomOut}
         onShowTutorial={openTutorial}
-        onToggleRules={openRules}
-        showRules={activeModal === "rules"}
+        onShowRules={openRules}
         tool={tool}
         setTool={setTool}
       />

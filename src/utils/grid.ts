@@ -1,5 +1,13 @@
 import { Grid, CellState } from "@/types/game";
 
+/** Check if coordinates are within grid bounds */
+export const isInBounds = (
+  row: number,
+  col: number,
+  numRows: number,
+  numCols: number
+): boolean => row >= 0 && row < numRows && col >= 0 && col < numCols;
+
 /** Create an empty grid with given dimensions */
 export const createEmptyGrid = (rows: number, cols: number): Grid =>
   Array.from({ length: rows }, () => Array<CellState>(cols).fill(0));

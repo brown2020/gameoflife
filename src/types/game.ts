@@ -11,11 +11,11 @@ export type CellState = 0 | 1;
 /** Grid representation as a 2D array of cell states */
 export type Grid = CellState[][];
 
-/** Coordinate tuple for patterns */
-export type Coordinate = [number, number];
+/** Coordinate tuple for patterns (immutable) */
+export type Coordinate = readonly [number, number];
 
-/** Pattern definition as array of coordinates */
-export type Pattern = Coordinate[];
+/** Pattern definition as array of coordinates (immutable) */
+export type Pattern = readonly Coordinate[];
 
 /** Neighbor offset for calculating adjacent cells */
 export type NeighborOffset = readonly [number, number];

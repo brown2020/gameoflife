@@ -39,7 +39,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ onClose }) => (
       <ListItems items={HOW_TO_USE} />
     </div>
 
-    <Button onClick={onClose} variant="blue">
+    <Button onClick={onClose} variant="info">
       Close
     </Button>
   </Modal>

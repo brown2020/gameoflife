@@ -1,6 +1,14 @@
 import React, { useRef, useEffect, useCallback, useState, memo } from "react";
 import { Grid, Tool, CellState } from "@/types/game";
 import { COLORS } from "@/constants/game";
+import { isInBounds } from "@/utils/grid";
+
+/** Cursor styles mapped by tool type (defined outside component to avoid recreation) */
+const CURSOR_BY_TOOL: Record<Tool, string> = {
+  pointer: "cursor-pointer",
+  draw: "cursor-crosshair",
+  eraser: "cursor-cell",
+};
 
 interface GridCanvasProps {
   grid: Grid;
@@ -90,7 +98,7 @@ export const GridCanvas = memo<GridCanvasProps>(
         const r = Math.floor(y / cellSize);
         const c = Math.floor(x / cellSize);
 
-        if (r >= 0 && r < numRows && c >= 0 && c < numCols) {
+        if (isInBounds(r, c, numRows, numCols)) {
           return { r, c };
         }
         return null;
@@ -156,7 +164,7 @@ export const GridCanvas = memo<GridCanvasProps>(
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseEnd}
         onMouseLeave={handleMouseEnd}
-        className="cursor-pointer"
+        className={CURSOR_BY_TOOL[tool]}
       />
     );
   }

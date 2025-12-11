@@ -1,13 +1,12 @@
 import React, { memo } from "react";
 
+/** Consolidated button variants for consistent styling */
 const variants = {
-  primary: "bg-green-600 hover:opacity-90",
-  danger: "bg-red-500 hover:opacity-90",
+  primary: "bg-green-600 hover:bg-green-500",
   secondary: "bg-gray-600 hover:bg-gray-500",
+  danger: "bg-red-500 hover:bg-red-400",
   accent: "bg-amber-600 hover:bg-amber-500",
-  info: "bg-indigo-600 hover:bg-indigo-500",
-  purple: "bg-purple-600 hover:bg-purple-500",
-  blue: "bg-blue-500 hover:bg-blue-600",
+  info: "bg-blue-600 hover:bg-blue-500",
 } as const;
 
 type ButtonVariant = keyof typeof variants;

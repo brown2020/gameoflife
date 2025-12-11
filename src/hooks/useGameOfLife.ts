@@ -10,9 +10,9 @@ import {
 } from "@/constants/game";
 import {
   createEmptyGrid,
-  copyGrid,
   updateCell,
   toggleCell as toggleCellUtil,
+  isInBounds,
 } from "@/utils/grid";
 
 export const useGameOfLife = () => {
@@ -63,8 +63,10 @@ export const useGameOfLife = () => {
       minCol = Math.max(0, minCol - 1);
       maxCol = Math.min(numCols - 1, maxCol + 1);
 
-      // Create new grid with shallow row copies
-      const newGrid = copyGrid(currentGrid);
+      // Lazy row copying - only copy rows we're modifying
+      const newGrid = currentGrid.map((row, i) =>
+        i >= minRow && i <= maxRow ? ([...row] as CellState[]) : row
+      );
 
       // Process cells within active area, tracking changes in single pass
       let hasChanged = false;
@@ -76,7 +78,7 @@ export const useGameOfLife = () => {
           for (const [dx, dy] of NEIGHBOR_OFFSETS) {
             const ni = i + dx;
             const nj = j + dy;
-            if (ni >= 0 && ni < numRows && nj >= 0 && nj < numCols) {
+            if (isInBounds(ni, nj, numRows, numCols)) {
               neighbors += currentGrid[ni][nj];
             }
           }
@@ -136,7 +138,7 @@ export const useGameOfLife = () => {
       const newGrid = createEmptyGrid(numRows, numCols);
 
       for (const [r, c] of source) {
-        if (r >= 0 && r < numRows && c >= 0 && c < numCols) {
+        if (isInBounds(r, c, numRows, numCols)) {
           newGrid[r][c] = 1;
         }
       }
@@ -153,7 +155,7 @@ export const useGameOfLife = () => {
   /** Toggle a single cell */
   const toggleCell = useCallback(
     (i: number, j: number) => {
-      if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
+      if (isInBounds(i, j, numRows, numCols)) {
         setGrid((prev) => toggleCellUtil(prev, i, j));
       }
     },
@@ -163,7 +165,7 @@ export const useGameOfLife = () => {
   /** Set a cell to a specific value */
   const setCell = useCallback(
     (i: number, j: number, value: CellState) => {
-      if (i >= 0 && i < numRows && j >= 0 && j < numCols) {
+      if (isInBounds(i, j, numRows, numCols)) {
         setGrid((prev) => updateCell(prev, i, j, value));
       }
     },
@@ -177,6 +179,9 @@ export const useGameOfLife = () => {
       return Math.max(CELL_SIZE.MIN, Math.min(CELL_SIZE.MAX, newSize));
     });
   }, []);
+
+  /** Reset generation counter */
+  const resetGeneration = useCallback(() => setGeneration(0), []);
 
   /** Resize grid to fit container */
   const resizeGridToContainer = useCallback(() => {
@@ -206,12 +211,23 @@ export const useGameOfLife = () => {
     });
   }, [cellSize, numCols, numRows]);
 
-  // Simulation loop
+  // Simulation loop using requestAnimationFrame for smoother animation
   useEffect(() => {
-    if (isRunning) {
-      const id = setInterval(runSimulation, speed);
-      return () => clearInterval(id);
-    }
+    if (!isRunning) return;
+
+    let lastTime = 0;
+    let frameId: number;
+
+    const animate = (time: number) => {
+      if (time - lastTime >= speed) {
+        runSimulation();
+        lastTime = time;
+      }
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
   }, [isRunning, runSimulation, speed]);
 
   // Resize observer
@@ -240,7 +256,7 @@ export const useGameOfLife = () => {
     isRunning,
     setIsRunning,
     generation,
-    setGeneration,
+    resetGeneration,
     speed,
     setSpeed,
     cellSize,

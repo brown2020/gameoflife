@@ -13,15 +13,14 @@ interface ControlsProps {
   selectedPattern: string | null;
   onPatternChange: (pattern: string) => void;
   generation: number;
-  setGeneration: (gen: number) => void;
+  resetGeneration: () => void;
   speed: number;
   setSpeed: (speed: number) => void;
   cellSize: number;
   zoomIn: () => void;
   zoomOut: () => void;
   onShowTutorial: () => void;
-  onToggleRules: () => void;
-  showRules: boolean;
+  onShowRules: () => void;
   tool: Tool;
   setTool: (tool: Tool) => void;
 }
@@ -36,15 +35,14 @@ export const Controls = memo<ControlsProps>(
     selectedPattern,
     onPatternChange,
     generation,
-    setGeneration,
+    resetGeneration,
     speed,
     setSpeed,
     cellSize,
     zoomIn,
     zoomOut,
     onShowTutorial,
-    onToggleRules,
-    showRules,
+    onShowRules,
     tool,
     setTool,
   }) => {
@@ -53,11 +51,6 @@ export const Controls = memo<ControlsProps>(
         setSpeed(SPEED.MAX - parseInt(e.target.value, 10));
       },
       [setSpeed]
-    );
-
-    const handleResetGeneration = useCallback(
-      () => setGeneration(0),
-      [setGeneration]
     );
 
     return (
@@ -151,7 +144,7 @@ export const Controls = memo<ControlsProps>(
                   Gen: <span className="font-mono">{generation}</span>
                   {generation > 0 && (
                     <button
-                      onClick={handleResetGeneration}
+                      onClick={resetGeneration}
                       className="ml-2 px-1 py-0.5 text-[10px] bg-gray-600 rounded hover:bg-gray-500"
                       title="Reset generation counter"
                     >
@@ -193,12 +186,10 @@ export const Controls = memo<ControlsProps>(
               </div>
 
               <div className="flex items-center gap-2">
-                <Button onClick={onShowTutorial} variant="purple">
+                <Button onClick={onShowTutorial} variant="info">
                   Tutorial
                 </Button>
-                <Button onClick={onToggleRules}>
-                  {showRules ? "Hide Rules" : "Show Rules"}
-                </Button>
+                <Button onClick={onShowRules}>Rules</Button>
               </div>
             </div>
           </div>
