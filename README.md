@@ -1,12 +1,12 @@
 # Conway's Game of Life
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.3-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1.18-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-A high-performance, interactive implementation of Conway's Game of Life built with **Next.js 16**, **React 19**, and **TypeScript**. Features canvas-based rendering, multiple drawing tools, and a curated collection of classic patterns.
+A high-performance, interactive implementation of Conway's Game of Life built with **Next.js 16.1**, **React 19.2**, and **TypeScript**. Features canvas-based rendering, multiple drawing tools, and a curated collection of classic patterns.
 
 ![Game of Life Demo](https://via.placeholder.com/800x400?text=Game+of+Life+Screenshot)
 
@@ -25,14 +25,14 @@ A high-performance, interactive implementation of Conway's Game of Life built wi
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 20.x or higher
+- [Node.js](https://nodejs.org/) 20.9 or higher
 - npm, yarn, or pnpm
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/gameoflife.git
+git clone <your-repo-url>
 cd gameoflife
 
 # Install dependencies
@@ -176,11 +176,11 @@ This implementation includes several optimizations for smooth performance:
 
 | Technology                                    | Version | Purpose                         |
 | --------------------------------------------- | ------- | ------------------------------- |
-| [Next.js](https://nextjs.org/)                | 16.0.8  | React framework with App Router |
-| [React](https://react.dev/)                   | 19.2.1  | UI library                      |
+| [Next.js](https://nextjs.org/)                | 16.1.1  | React framework with App Router |
+| [React](https://react.dev/)                   | 19.2.3  | UI library                      |
 | [TypeScript](https://www.typescriptlang.org/) | 5.9.3   | Type safety                     |
-| [Tailwind CSS](https://tailwindcss.com/)      | 4.1.17  | Utility-first styling           |
-| [ESLint](https://eslint.org/)                 | 9.39.1  | Code linting                    |
+| [Tailwind CSS](https://tailwindcss.com/)      | 4.1.18  | Utility-first styling           |
+| [ESLint](https://eslint.org/)                 | 9.39.2  | Code linting                    |
 | [PostCSS](https://postcss.org/)               | 8.5.6   | CSS processing                  |
 
 ## 📜 Conway's Game of Life Rules
@@ -223,7 +223,7 @@ Contributions are welcome! Here's how you can help:
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 — see the [LICENSE.md](LICENSE.md) file for details.
 
 ## 🙏 Acknowledgments
 
