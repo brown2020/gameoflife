@@ -13,7 +13,7 @@ export const createEmptyGrid = (rows: number, cols: number): Grid =>
   Array.from({ length: rows }, () => Array<CellState>(cols).fill(0));
 
 /** Shallow copy a grid (for immutable updates) */
-export const copyGrid = (grid: Grid): Grid =>
+const copyGrid = (grid: Grid): Grid =>
   grid.map((row) => [...row] as CellState[]);
 
 /** Update a single cell immutably, returns same grid reference if unchanged */
