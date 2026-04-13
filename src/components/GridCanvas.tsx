@@ -29,7 +29,9 @@ export const GridCanvas = memo<GridCanvasProps>(
 
     // Derive paint value from tool (stable reference via ref)
     const paintValueRef = useRef<CellState>(tool === "draw" ? 1 : 0);
-    paintValueRef.current = tool === "draw" ? 1 : 0;
+    useEffect(() => {
+      paintValueRef.current = tool === "draw" ? 1 : 0;
+    }, [tool]);
 
     // Cache 2D context on mount and when canvas changes
     useEffect(() => {
