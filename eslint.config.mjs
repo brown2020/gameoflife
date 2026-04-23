@@ -1,9 +1,9 @@
-import { fixupConfigRules } from "@eslint/compat";
-import coreWebVitals from "eslint-config-next/core-web-vitals";
-import typescript from "eslint-config-next/typescript";
+import nextPlugin from "@next/eslint-plugin-next";
+import tseslint from "typescript-eslint";
 
 const config = [
-  ...fixupConfigRules([...coreWebVitals, ...typescript]),
+  ...tseslint.configs.recommended,
+  nextPlugin.configs["core-web-vitals"],
 ];
 
 export default config;
