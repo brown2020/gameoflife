@@ -1,4 +1,5 @@
 import React, { memo, useEffect, useCallback, useRef } from "react";
+import { Button } from "./Button";
 
 interface ModalProps {
   children: React.ReactNode;
@@ -40,13 +41,24 @@ export const Modal = memo<ModalProps>(({ children, title, onClose }) => {
       <button
         type="button"
         className="absolute inset-0 bg-black/50 cursor-default"
-        aria-label="Close dialog"
+        aria-label="Dismiss dialog backdrop"
+        tabIndex={-1}
         onClick={onClose}
       />
-      <div className="relative z-10 bg-gray-800 p-6 rounded-lg max-w-md text-white shadow-xl">
-        <h2 id="modal-title" className="text-white text-xl mb-4">
-          {title}
-        </h2>
+      <div className="relative z-10 bg-gray-800 p-6 rounded-lg max-w-md text-white shadow-xl pointer-events-auto">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 id="modal-title" className="text-white text-xl">
+            {title}
+          </h2>
+          <Button
+            type="button"
+            onClick={onClose}
+            variant="secondary"
+            aria-label="Close dialog"
+          >
+            Close
+          </Button>
+        </div>
         {children}
       </div>
     </dialog>

@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { patterns } from "@/utils/patterns";
 import { Grid, CellState } from "@/types/game";
 import {
@@ -19,6 +25,12 @@ export const useGameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(() =>
     createEmptyGrid(GRID.DEFAULT_ROWS, GRID.DEFAULT_COLS)
   );
+  const gridRef = useRef<Grid | null>(null);
+
+  useLayoutEffect(() => {
+    gridRef.current = grid;
+  }, [grid]);
+
   const [isRunning, setIsRunning] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [speed, setSpeed] = useState<number>(SPEED.DEFAULT);
@@ -29,42 +41,43 @@ export const useGameOfLife = () => {
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef(grid);
 
-  useEffect(() => {
-    gridRef.current = grid;
-  }, [grid]);
+  const commitGrid = useCallback((next: Grid) => {
+    gridRef.current = next;
+    setGrid(next);
+  }, []);
 
-  /** Run one step of the simulation (pure compute, then state writes). */
   const runSimulation = useCallback(() => {
-    const result = stepSimulation(gridRef.current, numRows, numCols);
+    const current = gridRef.current;
+    if (!current) return;
+    const result = stepSimulation(current, numRows, numCols);
     if (result.shouldStop) {
       setIsRunning(false);
     }
     if (!result.changed) {
       return;
     }
-    setGrid(result.grid);
+    commitGrid(result.grid);
     setGeneration((prev) => prev + 1);
-  }, [numRows, numCols]);
+  }, [numRows, numCols, commitGrid]);
 
   const clearGrid = useCallback(() => {
-    setGrid(createEmptyGrid(numRows, numCols));
+    commitGrid(createEmptyGrid(numRows, numCols));
     setIsRunning(false);
     setGeneration(0);
     setSelectedPattern(null);
     setActiveLabel(null);
-  }, [numRows, numCols]);
+  }, [numRows, numCols, commitGrid]);
 
   const generateRandomGrid = useCallback(() => {
     const newGrid = createEmptyGrid(numRows, numCols).map((row) =>
       row.map(() => (Math.random() > 1 - RANDOM_DENSITY ? 1 : 0) as CellState)
     );
-    setGrid(newGrid);
+    commitGrid(newGrid);
     setGeneration(0);
     setSelectedPattern(null);
     setActiveLabel("Random");
-  }, [numRows, numCols]);
+  }, [numRows, numCols, commitGrid]);
 
   const setPattern = useCallback(
     (patternName: string) => {
@@ -78,31 +91,31 @@ export const useGameOfLife = () => {
         }
       }
 
-      setGrid(newGrid);
+      commitGrid(newGrid);
       setIsRunning(false);
       setSelectedPattern(patternName);
       setActiveLabel(patternName);
       setGeneration(0);
     },
-    [numRows, numCols]
+    [numRows, numCols, commitGrid]
   );
 
   const toggleCell = useCallback(
     (i: number, j: number) => {
-      if (isInBounds(i, j, numRows, numCols)) {
-        setGrid((prev) => toggleCellUtil(prev, i, j));
-      }
+      const current = gridRef.current;
+      if (!current || !isInBounds(i, j, numRows, numCols)) return;
+      commitGrid(toggleCellUtil(current, i, j));
     },
-    [numRows, numCols]
+    [numRows, numCols, commitGrid]
   );
 
   const setCell = useCallback(
     (i: number, j: number, value: CellState) => {
-      if (isInBounds(i, j, numRows, numCols)) {
-        setGrid((prev) => updateCell(prev, i, j, value));
-      }
+      const current = gridRef.current;
+      if (!current || !isInBounds(i, j, numRows, numCols)) return;
+      commitGrid(updateCell(current, i, j, value));
     },
-    [numRows, numCols]
+    [numRows, numCols, commitGrid]
   );
 
   const handleZoom = useCallback((zoomIn: boolean) => {
@@ -116,7 +129,8 @@ export const useGameOfLife = () => {
 
   const resizeGridToContainer = useCallback(() => {
     const container = containerRef.current;
-    if (!container) return;
+    const current = gridRef.current;
+    if (!container || !current) return;
 
     const { width, height } = container.getBoundingClientRect();
     const nextCols = Math.max(GRID.MIN_DIMENSION, Math.ceil(width / cellSize));
@@ -126,8 +140,8 @@ export const useGameOfLife = () => {
 
     setNumCols(nextCols);
     setNumRows(nextRows);
-    setGrid((prev) => resizeGrid(prev, nextRows, nextCols));
-  }, [cellSize, numCols, numRows]);
+    commitGrid(resizeGrid(current, nextRows, nextCols));
+  }, [cellSize, numCols, numRows, commitGrid]);
 
   useEffect(() => {
     if (!isRunning) return;

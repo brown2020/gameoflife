@@ -60,9 +60,9 @@ export const Controls = memo<ControlsProps>(
             {/* Row 1: Brand/Pattern + Primary Controls */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="text-sm font-semibold tracking-wide text-white">
+                <h1 className="text-sm font-semibold tracking-wide text-white">
                   Game of Life
-                </div>
+                </h1>
 
                 {/* Tool Selection */}
                 <div className="flex items-center bg-gray-700 rounded-md p-0.5 border border-gray-600">
