@@ -6,8 +6,8 @@ interface ListItemsProps {
 
 export const ListItems = memo<ListItemsProps>(({ items }) => (
   <ul className="list-disc pl-5 space-y-1">
-    {items.map((item, i) => (
-      <li key={i}>{item}</li>
+    {items.map((item) => (
+      <li key={item}>{item}</li>
     ))}
   </ul>
 ));

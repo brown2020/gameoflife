@@ -5,7 +5,6 @@ import {
   GRID,
   CELL_SIZE,
   SPEED,
-  NEIGHBOR_OFFSETS,
   RANDOM_DENSITY,
 } from "@/constants/game";
 import {
@@ -14,6 +13,7 @@ import {
   toggleCell as toggleCellUtil,
   isInBounds,
 } from "@/utils/grid";
+import { stepSimulation, resizeGrid } from "@/utils/simulation";
 
 export const useGameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(() =>
@@ -29,87 +29,25 @@ export const useGameOfLife = () => {
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef(grid);
 
-  /** Run one step of the simulation with optimized change detection */
+  useEffect(() => {
+    gridRef.current = grid;
+  }, [grid]);
+
+  /** Run one step of the simulation (pure compute, then state writes). */
   const runSimulation = useCallback(() => {
-    setGrid((currentGrid) => {
-      // Find boundaries of live cells for optimization
-      let minRow = numRows;
-      let maxRow = 0;
-      let minCol = numCols;
-      let maxCol = 0;
-      let hasLiveCells = false;
-
-      for (let i = 0; i < numRows; i++) {
-        for (let j = 0; j < numCols; j++) {
-          if (currentGrid[i][j]) {
-            hasLiveCells = true;
-            minRow = Math.min(minRow, i);
-            maxRow = Math.max(maxRow, i);
-            minCol = Math.min(minCol, j);
-            maxCol = Math.max(maxCol, j);
-          }
-        }
-      }
-
-      if (!hasLiveCells) {
-        setIsRunning(false);
-        return currentGrid;
-      }
-
-      // Add buffer around active area
-      minRow = Math.max(0, minRow - 1);
-      maxRow = Math.min(numRows - 1, maxRow + 1);
-      minCol = Math.max(0, minCol - 1);
-      maxCol = Math.min(numCols - 1, maxCol + 1);
-
-      // Lazy row copying - only copy rows we're modifying
-      const newGrid = currentGrid.map((row, i) =>
-        i >= minRow && i <= maxRow ? ([...row] as CellState[]) : row
-      );
-
-      // Process cells within active area, tracking changes in single pass
-      let hasChanged = false;
-
-      for (let i = minRow; i <= maxRow; i++) {
-        for (let j = minCol; j <= maxCol; j++) {
-          let neighbors = 0;
-
-          for (const [dx, dy] of NEIGHBOR_OFFSETS) {
-            const ni = i + dx;
-            const nj = j + dy;
-            if (isInBounds(ni, nj, numRows, numCols)) {
-              neighbors += currentGrid[ni][nj];
-            }
-          }
-
-          const current = currentGrid[i][j];
-          let next: CellState = current;
-
-          if (neighbors < 2 || neighbors > 3) {
-            next = 0;
-          } else if (current === 0 && neighbors === 3) {
-            next = 1;
-          }
-
-          if (next !== current) {
-            hasChanged = true;
-            newGrid[i][j] = next;
-          }
-        }
-      }
-
-      if (!hasChanged) {
-        setIsRunning(false);
-        return currentGrid; // Return original to avoid unnecessary re-render
-      }
-
-      setGeneration((prev) => prev + 1);
-      return newGrid;
-    });
+    const result = stepSimulation(gridRef.current, numRows, numCols);
+    if (result.shouldStop) {
+      setIsRunning(false);
+    }
+    if (!result.changed) {
+      return;
+    }
+    setGrid(result.grid);
+    setGeneration((prev) => prev + 1);
   }, [numRows, numCols]);
 
-  /** Clear the grid and reset state */
   const clearGrid = useCallback(() => {
     setGrid(createEmptyGrid(numRows, numCols));
     setIsRunning(false);
@@ -118,7 +56,6 @@ export const useGameOfLife = () => {
     setActiveLabel(null);
   }, [numRows, numCols]);
 
-  /** Generate a random grid */
   const generateRandomGrid = useCallback(() => {
     const newGrid = createEmptyGrid(numRows, numCols).map((row) =>
       row.map(() => (Math.random() > 1 - RANDOM_DENSITY ? 1 : 0) as CellState)
@@ -129,14 +66,12 @@ export const useGameOfLife = () => {
     setActiveLabel("Random");
   }, [numRows, numCols]);
 
-  /** Load a predefined pattern */
   const setPattern = useCallback(
     (patternName: string) => {
       const source = patterns[patternName];
       if (!source) return;
 
       const newGrid = createEmptyGrid(numRows, numCols);
-
       for (const [r, c] of source) {
         if (isInBounds(r, c, numRows, numCols)) {
           newGrid[r][c] = 1;
@@ -152,7 +87,6 @@ export const useGameOfLife = () => {
     [numRows, numCols]
   );
 
-  /** Toggle a single cell */
   const toggleCell = useCallback(
     (i: number, j: number) => {
       if (isInBounds(i, j, numRows, numCols)) {
@@ -162,7 +96,6 @@ export const useGameOfLife = () => {
     [numRows, numCols]
   );
 
-  /** Set a cell to a specific value */
   const setCell = useCallback(
     (i: number, j: number, value: CellState) => {
       if (isInBounds(i, j, numRows, numCols)) {
@@ -172,7 +105,6 @@ export const useGameOfLife = () => {
     [numRows, numCols]
   );
 
-  /** Handle zoom in/out */
   const handleZoom = useCallback((zoomIn: boolean) => {
     setCellSize((prev) => {
       const newSize = zoomIn ? prev + CELL_SIZE.STEP : prev - CELL_SIZE.STEP;
@@ -180,10 +112,8 @@ export const useGameOfLife = () => {
     });
   }, []);
 
-  /** Reset generation counter */
   const resetGeneration = useCallback(() => setGeneration(0), []);
 
-  /** Resize grid to fit container */
   const resizeGridToContainer = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -196,22 +126,9 @@ export const useGameOfLife = () => {
 
     setNumCols(nextCols);
     setNumRows(nextRows);
-
-    setGrid((prev) => {
-      const newGrid = createEmptyGrid(nextRows, nextCols);
-      const copyRows = Math.min(prev.length, nextRows);
-      const copyCols = Math.min(prev[0]?.length ?? 0, nextCols);
-
-      for (let i = 0; i < copyRows; i++) {
-        for (let j = 0; j < copyCols; j++) {
-          newGrid[i][j] = prev[i][j];
-        }
-      }
-      return newGrid;
-    });
+    setGrid((prev) => resizeGrid(prev, nextRows, nextCols));
   }, [cellSize, numCols, numRows]);
 
-  // Simulation loop using requestAnimationFrame for smoother animation
   useEffect(() => {
     if (!isRunning) return;
 
@@ -230,7 +147,6 @@ export const useGameOfLife = () => {
     return () => cancelAnimationFrame(frameId);
   }, [isRunning, runSimulation, speed]);
 
-  // Resize observer
   useEffect(() => {
     resizeGridToContainer();
 

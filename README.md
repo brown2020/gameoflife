@@ -1,12 +1,12 @@
 # Conway's Game of Life
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2.3-61DAFB?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1.18-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.3-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.3-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-A high-performance, interactive implementation of Conway's Game of Life built with **Next.js 16.1**, **React 19.2**, and **TypeScript**. Features canvas-based rendering, multiple drawing tools, and a curated collection of classic patterns.
+A high-performance, interactive implementation of Conway's Game of Life built with **Next.js 16.3**, **React 19.3**, and **TypeScript**. Features canvas-based rendering, multiple drawing tools, and a curated collection of classic patterns.
 
 ![Game of Life Demo](https://via.placeholder.com/800x400?text=Game+of+Life+Screenshot)
 
@@ -52,6 +52,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run build` | Build for production                    |
 | `npm run start` | Start production server                 |
 | `npm run lint`  | Run ESLint                              |
+| `npm run typecheck` | TypeScript `--noEmit`                |
+| `npm test`       | Run Vitest unit tests                   |
 
 ## 🎮 Usage
 

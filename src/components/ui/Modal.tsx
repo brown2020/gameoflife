@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useCallback } from "react";
+import React, { memo, useEffect, useCallback, useRef } from "react";
 
 interface ModalProps {
   children: React.ReactNode;
@@ -7,46 +7,49 @@ interface ModalProps {
 }
 
 export const Modal = memo<ModalProps>(({ children, title, onClose }) => {
-  // Close on Escape key
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
-  // Close on backdrop click
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) {
-        onClose();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+    return () => {
+      if (dialog.open) {
+        dialog.close();
       }
+    };
+  }, []);
+
+  const handleCancel = useCallback(
+    (e: React.SyntheticEvent<HTMLDialogElement>) => {
+      e.preventDefault();
+      onClose();
     },
     [onClose]
   );
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      className="fixed inset-0 z-50 m-0 h-full w-full max-h-none max-w-none border-0 bg-transparent p-0 open:flex open:items-center open:justify-center"
+      onCancel={handleCancel}
       aria-labelledby="modal-title"
     >
-      <div className="bg-gray-800 p-6 rounded-lg max-w-md">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/50 cursor-default"
+        aria-label="Close dialog"
+        onClick={onClose}
+      />
+      <div className="relative z-10 bg-gray-800 p-6 rounded-lg max-w-md text-white shadow-xl">
         <h2 id="modal-title" className="text-white text-xl mb-4">
           {title}
         </h2>
         {children}
       </div>
-    </div>
+    </dialog>
   );
 });
 

@@ -167,6 +167,8 @@ export const GridCanvas = memo<GridCanvasProps>(
         onMouseUp={handleMouseEnd}
         onMouseLeave={handleMouseEnd}
         className={CURSOR_BY_TOOL[tool]}
+        role="img"
+        aria-label={`Game of Life grid, ${numRows} by ${numCols} cells, tool ${tool}. Use pointer, draw, or eraser tools from the toolbar.`}
       />
     );
   }
