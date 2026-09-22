@@ -17,7 +17,7 @@ export const InfoPanel = memo<InfoPanelProps>(({ activeLabel }) => {
   return (
     <aside className="mx-auto max-w-6xl px-4" aria-label="Pattern information">
       <div className="bg-gray-800/70 border border-gray-700 p-3 rounded-md mt-4">
-        <h3 className="text-white text-base font-medium mb-1">{label}</h3>
+        <h2 className="text-white text-base font-medium mb-1">{label}</h2>
         <p className="text-gray-300 text-xs">{text}</p>
       </div>
     </aside>
