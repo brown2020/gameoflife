@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState, memo } from "react";
 import { Grid, Tool, CellState } from "@/types/game";
 import { COLORS } from "@/constants/game";
-import { isInBounds } from "@/utils/grid";
+import { cellsAlongLine, isInBounds } from "@/utils/grid";
 
 /** Cursor styles mapped by tool type (defined outside component to avoid recreation) */
 const CURSOR_BY_TOOL: Record<Tool, string> = {
@@ -9,6 +9,8 @@ const CURSOR_BY_TOOL: Record<Tool, string> = {
   draw: "cursor-crosshair",
   eraser: "cursor-cell",
 };
+
+const CURSOR_COLOR = "#fbbf24";
 
 interface GridCanvasProps {
   grid: Grid;
@@ -20,25 +22,39 @@ interface GridCanvasProps {
   tool: Tool;
 }
 
+type CellCoord = { r: number; c: number };
+
 export const GridCanvas = memo<GridCanvasProps>(
   ({ grid, cellSize, numRows, numCols, onToggleCell, onSetCell, tool }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const lastPaintedRef = useRef<{ r: number; c: number } | null>(null);
+    const draggingRef = useRef(false);
+    const lastPaintedRef = useRef<CellCoord | null>(null);
+    const cursorRef = useRef<CellCoord>({ r: 0, c: 0 });
+    const [cursor, setCursor] = useState<CellCoord>({ r: 0, c: 0 });
+    const [isGridFocused, setIsGridFocused] = useState(false);
 
-    // Derive paint value from tool (stable reference via ref)
     const paintValueRef = useRef<CellState>(tool === "draw" ? 1 : 0);
     useEffect(() => {
       paintValueRef.current = tool === "draw" ? 1 : 0;
     }, [tool]);
 
-    // Cache 2D context on mount and when canvas changes
     useEffect(() => {
       ctxRef.current = canvasRef.current?.getContext("2d") ?? null;
     }, []);
 
-    // Optimized batched rendering
+    useEffect(() => {
+      const next = {
+        r: Math.min(cursorRef.current.r, Math.max(0, numRows - 1)),
+        c: Math.min(cursorRef.current.c, Math.max(0, numCols - 1)),
+      };
+      if (next.r === cursorRef.current.r && next.c === cursorRef.current.c) {
+        return;
+      }
+      cursorRef.current = next;
+      setCursor(next);
+    }, [numRows, numCols]);
+
     const renderGrid = useCallback(() => {
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
@@ -47,50 +63,58 @@ export const GridCanvas = memo<GridCanvasProps>(
       const width = numCols * cellSize;
       const height = numRows * cellSize;
 
-      // Fill background (dead cells) in one call
       ctx.fillStyle = COLORS.CELL_DEAD;
       ctx.fillRect(0, 0, width, height);
 
-      // Batch all alive cells into a single path
       ctx.fillStyle = COLORS.CELL_ALIVE;
       ctx.beginPath();
       for (let i = 0; i < numRows; i++) {
+        const row = grid[i];
+        if (!row) continue;
         for (let j = 0; j < numCols; j++) {
-          if (grid[i][j]) {
+          if (row[j]) {
             ctx.rect(j * cellSize, i * cellSize, cellSize, cellSize);
           }
         }
       }
       ctx.fill();
 
-      // Draw grid lines in two batched operations
       ctx.strokeStyle = COLORS.GRID_LINE;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      // Vertical lines
       for (let x = 0; x <= width; x += cellSize) {
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
       }
-      // Horizontal lines
       for (let y = 0; y <= height; y += cellSize) {
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
       }
       ctx.stroke();
-    }, [grid, cellSize, numRows, numCols]);
+
+      if (isGridFocused) {
+        ctx.strokeStyle = CURSOR_COLOR;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          cursor.c * cellSize + 1,
+          cursor.r * cellSize + 1,
+          Math.max(1, cellSize - 2),
+          Math.max(1, cellSize - 2)
+        );
+      }
+    }, [grid, cellSize, numRows, numCols, cursor, isGridFocused]);
 
     useEffect(() => {
       renderGrid();
     }, [renderGrid]);
 
     const getGridCoordinates = useCallback(
-      (
-        event: React.MouseEvent<HTMLCanvasElement>
-      ): { r: number; c: number } | null => {
+      (event: { clientX: number; clientY: number }): CellCoord | null => {
         const canvas = canvasRef.current;
         if (!canvas) return null;
 
         const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return null;
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
@@ -108,67 +132,138 @@ export const GridCanvas = memo<GridCanvasProps>(
       [cellSize, numRows, numCols]
     );
 
-    const handleMouseDown = useCallback(
-      (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const paintLine = useCallback(
+      (from: CellCoord | null, to: CellCoord) => {
+        const cells = from
+          ? cellsAlongLine(from.r, from.c, to.r, to.c)
+          : [to];
+        const value = paintValueRef.current;
+        for (const cell of cells) {
+          onSetCell(cell.r, cell.c, value);
+        }
+        lastPaintedRef.current = to;
+      },
+      [onSetCell]
+    );
+
+    const handlePointerDown = useCallback(
+      (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (event.button !== 0) return;
         const coords = getGridCoordinates(event);
         if (!coords) return;
 
-        const { r, c } = coords;
+        event.currentTarget.focus({ preventScroll: true });
+        cursorRef.current = coords;
+        setCursor(coords);
 
         if (tool === "pointer") {
-          onToggleCell(r, c);
+          onToggleCell(coords.r, coords.c);
           return;
         }
 
-        // Draw or Eraser mode
-        setIsDragging(true);
-        onSetCell(r, c, paintValueRef.current);
-        lastPaintedRef.current = { r, c };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        draggingRef.current = true;
+        paintLine(null, coords);
       },
-      [tool, getGridCoordinates, onToggleCell, onSetCell]
+      [tool, getGridCoordinates, onToggleCell, paintLine]
     );
 
-    const handleMouseMove = useCallback(
-      (event: React.MouseEvent<HTMLCanvasElement>) => {
-        if (tool === "pointer" || !isDragging) return;
+    const handlePointerMove = useCallback(
+      (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (tool === "pointer" || !draggingRef.current) return;
 
         const coords = getGridCoordinates(event);
         if (!coords) return;
-
-        const { r, c } = coords;
-
-        // Skip if same cell as last painted
         if (
-          lastPaintedRef.current?.r === r &&
-          lastPaintedRef.current?.c === c
+          lastPaintedRef.current?.r === coords.r &&
+          lastPaintedRef.current?.c === coords.c
         ) {
           return;
         }
 
-        onSetCell(r, c, paintValueRef.current);
-        lastPaintedRef.current = { r, c };
+        paintLine(lastPaintedRef.current, coords);
       },
-      [tool, isDragging, getGridCoordinates, onSetCell]
+      [tool, getGridCoordinates, paintLine]
     );
 
-    // Combined handler for mouse up and leave (identical behavior)
-    const handleMouseEnd = useCallback(() => {
-      setIsDragging(false);
-      lastPaintedRef.current = null;
-    }, []);
+    const handlePointerEnd = useCallback(
+      (event: React.PointerEvent<HTMLCanvasElement>) => {
+        draggingRef.current = false;
+        lastPaintedRef.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+      },
+      []
+    );
+
+    const editCursorCell = useCallback(() => {
+      const { r, c } = cursorRef.current;
+      if (!isInBounds(r, c, numRows, numCols)) return;
+      if (tool === "pointer") {
+        onToggleCell(r, c);
+        return;
+      }
+      onSetCell(r, c, paintValueRef.current);
+    }, [numRows, numCols, tool, onToggleCell, onSetCell]);
+
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent<HTMLCanvasElement>) => {
+        const key = event.key;
+        if (
+          key !== "ArrowUp" &&
+          key !== "ArrowDown" &&
+          key !== "ArrowLeft" &&
+          key !== "ArrowRight" &&
+          key !== "Enter" &&
+          key !== " "
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (key === "Enter" || key === " ") {
+          editCursorCell();
+          return;
+        }
+
+        const delta =
+          key === "ArrowUp"
+            ? { r: -1, c: 0 }
+            : key === "ArrowDown"
+              ? { r: 1, c: 0 }
+              : key === "ArrowLeft"
+                ? { r: 0, c: -1 }
+                : { r: 0, c: 1 };
+        const next = {
+          r: Math.min(numRows - 1, Math.max(0, cursorRef.current.r + delta.r)),
+          c: Math.min(numCols - 1, Math.max(0, cursorRef.current.c + delta.c)),
+        };
+        cursorRef.current = next;
+        setCursor(next);
+      },
+      [editCursorCell, numRows, numCols]
+    );
 
     return (
       <canvas
         ref={canvasRef}
         width={numCols * cellSize}
         height={numRows * cellSize}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseEnd}
-        onMouseLeave={handleMouseEnd}
-        className={CURSOR_BY_TOOL[tool]}
-        role="img"
-        aria-label={`Game of Life grid, ${numRows} by ${numCols} cells, tool ${tool}. Use pointer, draw, or eraser tools from the toolbar.`}
+        tabIndex={0}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsGridFocused(true)}
+        onBlur={() => setIsGridFocused(false)}
+        className={`${CURSOR_BY_TOOL[tool]} touch-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
+        role="application"
+        aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Space"
+        aria-label={`Game of Life grid, ${numRows} by ${numCols} cells, ${tool} tool. Arrow keys move the cursor. Enter or Space edits the focused cell.`}
       />
     );
   }

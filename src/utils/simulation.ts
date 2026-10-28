@@ -8,21 +8,34 @@ export type SimulationStepResult = {
   shouldStop: boolean;
 };
 
-/** Pure Conway step with live-cell bounding-box optimization. */
+/**
+ * Pure Conway step with live-cell bounding-box optimization.
+ * Requested dimensions are clamped to the array that was actually passed so a
+ * stale row/column count cannot index off the end of the grid.
+ */
 export function stepSimulation(
   currentGrid: Grid,
   numRows: number,
   numCols: number
 ): SimulationStepResult {
-  let minRow = numRows;
+  const rows = Math.min(Math.max(0, numRows), currentGrid.length);
+  const cols = Math.min(Math.max(0, numCols), currentGrid[0]?.length ?? 0);
+
+  if (rows === 0 || cols === 0) {
+    return { grid: currentGrid, changed: false, shouldStop: true };
+  }
+
+  let minRow = rows;
   let maxRow = 0;
-  let minCol = numCols;
+  let minCol = cols;
   let maxCol = 0;
   let hasLiveCells = false;
 
-  for (let i = 0; i < numRows; i++) {
-    for (let j = 0; j < numCols; j++) {
-      if (currentGrid[i]?.[j]) {
+  for (let i = 0; i < rows; i++) {
+    const row = currentGrid[i];
+    if (!row) continue;
+    for (let j = 0; j < cols; j++) {
+      if (row[j]) {
         hasLiveCells = true;
         minRow = Math.min(minRow, i);
         maxRow = Math.max(maxRow, i);
@@ -37,9 +50,9 @@ export function stepSimulation(
   }
 
   minRow = Math.max(0, minRow - 1);
-  maxRow = Math.min(numRows - 1, maxRow + 1);
+  maxRow = Math.min(rows - 1, maxRow + 1);
   minCol = Math.max(0, minCol - 1);
-  maxCol = Math.min(numCols - 1, maxCol + 1);
+  maxCol = Math.min(cols - 1, maxCol + 1);
 
   const newGrid = currentGrid.map((row, i) =>
     i >= minRow && i <= maxRow ? ([...row] as CellState[]) : row
@@ -48,17 +61,19 @@ export function stepSimulation(
   let hasChanged = false;
 
   for (let i = minRow; i <= maxRow; i++) {
+    const sourceRow = currentGrid[i];
+    if (!sourceRow) continue;
     for (let j = minCol; j <= maxCol; j++) {
       let neighbors = 0;
       for (const [dx, dy] of NEIGHBOR_OFFSETS) {
         const ni = i + dx;
         const nj = j + dy;
-        if (isInBounds(ni, nj, numRows, numCols)) {
-          neighbors += currentGrid[ni][nj];
+        if (isInBounds(ni, nj, rows, cols)) {
+          neighbors += currentGrid[ni]?.[nj] ?? 0;
         }
       }
 
-      const current = currentGrid[i][j];
+      const current: CellState = sourceRow[j] ?? 0;
       let next: CellState = current;
       if (neighbors < 2 || neighbors > 3) {
         next = 0;
@@ -68,7 +83,8 @@ export function stepSimulation(
 
       if (next !== current) {
         hasChanged = true;
-        newGrid[i][j] = next;
+        const target = newGrid[i];
+        if (target) target[j] = next;
       }
     }
   }

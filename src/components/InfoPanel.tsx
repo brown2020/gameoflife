@@ -6,9 +6,10 @@ const DEFAULT_INFO_TEXT =
 
 interface InfoPanelProps {
   activeLabel: string | null;
+  notice?: string | null;
 }
 
-export const InfoPanel = memo<InfoPanelProps>(({ activeLabel }) => {
+export const InfoPanel = memo<InfoPanelProps>(({ activeLabel, notice }) => {
   const label = activeLabel ?? "About";
   const text = activeLabel
     ? patternInfo[activeLabel] ?? DEFAULT_INFO_TEXT
@@ -19,6 +20,11 @@ export const InfoPanel = memo<InfoPanelProps>(({ activeLabel }) => {
       <div className="bg-gray-800/70 border border-gray-700 p-3 rounded-md mt-4">
         <h2 className="text-white text-base font-medium mb-1">{label}</h2>
         <p className="text-gray-300 text-xs">{text}</p>
+        {notice ? (
+          <p className="text-amber-200 text-xs mt-2" role="status">
+            {notice}
+          </p>
+        ) : null}
       </div>
     </aside>
   );

@@ -3,6 +3,7 @@ import { patternCategories } from "@/utils/patterns";
 import { Button } from "./ui/Button";
 import { Tool } from "@/types/game";
 import { SPEED, TOOL_CONFIG } from "@/constants/game";
+import { sliderFromSpeed, speedFromSlider } from "@/utils/speed";
 
 interface ControlsProps {
   isRunning: boolean;
@@ -48,18 +49,20 @@ export const Controls = memo<ControlsProps>(
   }) => {
     const handleSpeedChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSpeed(SPEED.MAX - parseInt(e.target.value, 10));
+        setSpeed(speedFromSlider(Number(e.target.value)));
       },
       [setSpeed]
     );
+
+    const sliderValue = sliderFromSpeed(speed);
 
     return (
       <header className="sticky top-0 z-20 w-full border-b border-gray-700 bg-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-gray-800/60">
         <div className="mx-auto max-w-6xl px-4 py-3">
           <div className="flex flex-col gap-3">
             {/* Row 1: Brand/Pattern + Primary Controls */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3 min-w-0">
                 <h1 className="text-sm font-semibold tracking-wide text-white">
                   Game of Life
                 </h1>
@@ -109,7 +112,7 @@ export const Controls = memo<ControlsProps>(
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   onClick={toggleRunning}
                   variant={isRunning ? "danger" : "primary"}
@@ -138,8 +141,8 @@ export const Controls = memo<ControlsProps>(
             </div>
 
             {/* Row 2: Readouts/Tuners + Help */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="text-xs text-gray-200">
                   Gen: <span className="font-mono">{generation}</span>
                   {generation > 0 && (
@@ -160,10 +163,14 @@ export const Controls = memo<ControlsProps>(
                     min={SPEED.MIN}
                     max={SPEED.MAX}
                     step={SPEED.STEP}
-                    value={SPEED.MAX - speed}
+                    value={sliderValue}
                     onChange={handleSpeedChange}
                     className="w-24 accent-blue-500"
                     aria-label="Simulation speed"
+                    aria-valuemin={SPEED.MIN}
+                    aria-valuemax={SPEED.MAX}
+                    aria-valuenow={sliderValue}
+                    aria-valuetext={`${speed} milliseconds between generations`}
                   />
                 </div>
 

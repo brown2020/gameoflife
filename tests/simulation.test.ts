@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { stepSimulation, resizeGrid } from "@/utils/simulation";
-import { createEmptyGrid } from "@/utils/grid";
+import { cellsAlongLine, createEmptyGrid, fitGridDimensions } from "@/utils/grid";
+import { placePattern } from "@/utils/patterns";
+import { sliderFromSpeed, speedFromSlider } from "@/utils/speed";
+import { SPEED } from "@/constants/game";
+import { shouldIgnoreGameShortcut } from "@/hooks/useKeyboardShortcuts";
 import { CellState, Grid } from "@/types/game";
+
+function countLive(grid: Grid): number {
+  let live = 0;
+  for (const row of grid) {
+    for (const cell of row) live += cell;
+  }
+  return live;
+}
 
 function gridFrom(rows: string[]): Grid {
   return rows.map((row) =>
@@ -50,6 +62,17 @@ describe("stepSimulation", () => {
     expect(result.changed).toBe(true);
     expect(result.grid).toEqual(createEmptyGrid(3, 3));
   });
+
+  it("does not throw when the requested size is larger than the grid", () => {
+    const small = createEmptyGrid(5, 5);
+    small[4][4] = 1;
+    expect(() => stepSimulation(small, 50, 50)).not.toThrow();
+    const result = stepSimulation(small, 50, 50);
+    expect(result.grid).toHaveLength(5);
+    expect(result.grid[4]).toHaveLength(5);
+    expect(result.grid[4][4]).toBe(0);
+    expect(result.changed).toBe(true);
+  });
 });
 
 describe("resizeGrid", () => {
@@ -57,6 +80,88 @@ describe("resizeGrid", () => {
     const prev = gridFrom(["10", "01"]);
     const next = resizeGrid(prev, 3, 3);
     expect(next).toEqual(gridFrom(["100", "010", "000"]));
+  });
+});
+
+describe("fitGridDimensions", () => {
+  it("floors to the content box so the canvas is not clipped", () => {
+    const cellSize = 20;
+    const { rows, cols } = fitGridDimensions(1118, 622, cellSize);
+    expect(cols * cellSize).toBeLessThanOrEqual(1118);
+    expect(rows * cellSize).toBeLessThanOrEqual(622);
+    expect(cols).toBe(55);
+    expect(rows).toBe(31);
+  });
+});
+
+describe("cellsAlongLine", () => {
+  it("fills every cell between the endpoints of a straight stroke", () => {
+    const cells = cellsAlongLine(2, 2, 2, 12);
+    expect(cells).toHaveLength(11);
+    expect(cells[0]).toEqual({ r: 2, c: 2 });
+    expect(cells[10]).toEqual({ r: 2, c: 12 });
+    expect(cells.map((cell) => cell.c)).toEqual([
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
+  });
+});
+
+describe("placePattern", () => {
+  it("centers a pattern whose absolute coordinates sit outside a small grid", () => {
+    const placed = placePattern(
+      [
+        [20, 21],
+        [20, 22],
+        [21, 20],
+        [21, 21],
+        [22, 21],
+      ],
+      18,
+      30
+    );
+    expect(placed.clipped).toBe(0);
+    expect(countLive(placed.grid)).toBe(5);
+  });
+
+  it("reports cells that still cannot fit", () => {
+    const placed = placePattern(
+      [
+        [1, 0],
+        [1, 4],
+        [1, 8],
+      ],
+      5,
+      5
+    );
+    expect(placed.clipped).toBe(2);
+    expect(countLive(placed.grid)).toBe(1);
+  });
+});
+
+describe("speed slider", () => {
+  it("keeps every slider position inside the configured delay range", () => {
+    for (let value = SPEED.MIN; value <= SPEED.MAX; value += SPEED.STEP) {
+      const speed = speedFromSlider(value);
+      expect(speed).toBeGreaterThanOrEqual(SPEED.MIN);
+      expect(speed).toBeLessThanOrEqual(SPEED.MAX);
+    }
+    expect(speedFromSlider(SPEED.MAX)).toBe(SPEED.MIN);
+    expect(speedFromSlider(SPEED.MIN)).toBe(SPEED.MAX);
+    expect(sliderFromSpeed(SPEED.DEFAULT)).toBe(
+      SPEED.MIN + SPEED.MAX - SPEED.DEFAULT
+    );
+    expect(speedFromSlider(0)).toBe(SPEED.MAX);
+  });
+});
+
+describe("keyboard shortcut guard", () => {
+  it("ignores shortcuts while a dialog is open or focus is on the grid", () => {
+    expect(shouldIgnoreGameShortcut({ nodeName: "BUTTON" }, true)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "CANVAS" }, false)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "INPUT" }, false)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "BUTTON" }, false)).toBe(
+      false
+    );
   });
 });
 

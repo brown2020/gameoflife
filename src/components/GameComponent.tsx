@@ -23,6 +23,7 @@ const GameComponent: React.FC = () => {
     handleZoom,
     selectedPattern,
     activeLabel,
+    patternNotice,
     setPattern,
     stepSimulation,
     clearGrid,
@@ -112,7 +113,7 @@ const GameComponent: React.FC = () => {
         setTool={setTool}
       />
 
-      <InfoPanel activeLabel={activeLabel} />
+      <InfoPanel activeLabel={activeLabel} notice={patternNotice} />
 
       <main className="mx-auto max-w-6xl p-4">
         <div
@@ -131,7 +132,7 @@ const GameComponent: React.FC = () => {
         </div>
         <p className="text-gray-400 text-xs mt-2 text-center">
           Keyboard: Space (Start/Stop), C (Clear), R (Random), S (Step), +/−
-          (Zoom)
+          (Zoom). Focus the grid, then use arrow keys and Enter to edit cells.
         </p>
       </main>
 

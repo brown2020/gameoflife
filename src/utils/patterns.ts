@@ -1,6 +1,55 @@
-import { Pattern } from "@/types/game";
+import { Grid, Pattern } from "@/types/game";
+import { createEmptyGrid, isInBounds } from "@/utils/grid";
 
-/** Predefined patterns as relative coordinates */
+export type PlacedPattern = {
+  grid: Grid;
+  /** Cells that fell outside the grid after centering. */
+  clipped: number;
+};
+
+/**
+ * Center a pattern on a grid. Coordinates may be absolute; placement uses the
+ * pattern's own bounding box so a small board still shows the pattern.
+ */
+export const placePattern = (
+  pattern: Pattern,
+  rows: number,
+  cols: number
+): PlacedPattern => {
+  const grid = createEmptyGrid(Math.max(0, rows), Math.max(0, cols));
+  if (pattern.length === 0 || rows < 1 || cols < 1) {
+    return { grid, clipped: pattern.length };
+  }
+
+  let minRow = pattern[0][0];
+  let maxRow = pattern[0][0];
+  let minCol = pattern[0][1];
+  let maxCol = pattern[0][1];
+  for (const [r, c] of pattern) {
+    minRow = Math.min(minRow, r);
+    maxRow = Math.max(maxRow, r);
+    minCol = Math.min(minCol, c);
+    maxCol = Math.max(maxCol, c);
+  }
+
+  const rowOffset = Math.floor((rows - (maxRow - minRow + 1)) / 2) - minRow;
+  const colOffset = Math.floor((cols - (maxCol - minCol + 1)) / 2) - minCol;
+  let clipped = 0;
+
+  for (const [r, c] of pattern) {
+    const row = r + rowOffset;
+    const col = c + colOffset;
+    if (isInBounds(row, col, rows, cols)) {
+      grid[row][col] = 1;
+    } else {
+      clipped += 1;
+    }
+  }
+
+  return { grid, clipped };
+};
+
+/** Predefined patterns. Coordinates are normalized and centered at load time. */
 export const patterns: Record<string, Pattern> = {
   Glider: [
     [1, 2],

@@ -1,5 +1,18 @@
 import { useEffect, useCallback } from "react";
 
+const EDITING_TARGETS = new Set(["INPUT", "TEXTAREA", "SELECT", "CANVAS"]);
+
+/** Skip global shortcuts while a modal is open or focus is in a field or the grid. */
+export const shouldIgnoreGameShortcut = (
+  target: unknown,
+  dialogOpen: boolean
+): boolean => {
+  if (dialogOpen) return true;
+  if (!target || typeof target !== "object") return false;
+  const nodeName = (target as { nodeName?: string }).nodeName;
+  return typeof nodeName === "string" && EDITING_TARGETS.has(nodeName);
+};
+
 interface KeyboardShortcutActions {
   toggleRunning: () => void;
   clear: () => void;
@@ -30,12 +43,10 @@ export const useKeyboardShortcuts = ({
 }: KeyboardShortcutActions): void => {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof HTMLSelectElement
-      ) {
+      const dialogOpen =
+        typeof document !== "undefined" &&
+        document.querySelector("dialog[open]") !== null;
+      if (shouldIgnoreGameShortcut(e.target, dialogOpen)) {
         return;
       }
 
