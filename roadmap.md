@@ -19,7 +19,8 @@ Punchlist after the October 28, 2026 maintenance pass. The GitHub issue list and
 - Pentadecathlon is stored as two oscillators side by side. On a large board they do not interfere. On a short board the lower copy can hit the edge.
 - Pattern text is static. There is no editor for the description strings.
 - There is no automated browser test. Unit tests cover the pure helpers and the header policy. Resize-while-running, touch strokes, and the modal shortcut guard were checked by hand against a production build.
-- `typescript-eslint` 8.72.1 rejects TypeScript 7. Lint and Next's programmatic check use `@typescript/typescript6` (6.0.2). `npm run typecheck` uses the TypeScript 7.0.2 `tsc`. Drop the alias when typescript-eslint supports TypeScript 7.
+- `typescript-eslint` 8.72.1 rejects TypeScript 7 (`typescript` peer is `>=4.8.4 <6.1.0`). Lint and Next's programmatic check use `@typescript/typescript6` (6.0.2). `npm run typecheck` uses the TypeScript 7.0.2 `tsc`. Drop the alias when typescript-eslint supports TypeScript 7.
+- `minimatch` is overridden to 11.0.4. ESLint 10.14.0 and typescript-eslint 8.72.1 still depend on minimatch 10, which is the vulnerable range in GHSA-g3hv-75wg-m249 (versions before 11.0.1). Remove the override when those packages depend on minimatch 11.
 
 ## Not in this repo
 

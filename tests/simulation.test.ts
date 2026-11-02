@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { stepSimulation, resizeGrid } from "@/utils/simulation";
-import { cellsAlongLine, createEmptyGrid, fitGridDimensions } from "@/utils/grid";
+import {
+  cellsAlongLine,
+  createEmptyGrid,
+  fitGridDimensions,
+  toggleCell,
+  updateCell,
+} from "@/utils/grid";
+import { patterns } from "@/utils/patterns";
 import { placePattern } from "@/utils/patterns";
 import { sliderFromSpeed, speedFromSlider } from "@/utils/speed";
 import { SPEED } from "@/constants/game";
@@ -103,6 +110,52 @@ describe("cellsAlongLine", () => {
     expect(cells.map((cell) => cell.c)).toEqual([
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
     ]);
+  });
+
+  it("fills every cell of a diagonal drag", () => {
+    expect(cellsAlongLine(0, 0, 2, 2)).toEqual([
+      { r: 0, c: 0 },
+      { r: 1, c: 1 },
+      { r: 2, c: 2 },
+    ]);
+  });
+});
+
+describe("paint, erase, and clear", () => {
+  it("toggles a painted cell on and back off", () => {
+    const empty = createEmptyGrid(3, 3);
+    const painted = toggleCell(empty, 1, 1);
+    expect(painted[1][1]).toBe(1);
+    expect(empty[1][1]).toBe(0);
+    expect(toggleCell(painted, 1, 1)[1][1]).toBe(0);
+  });
+
+  it("draws and erases a cell, leaving an unchanged cell in place", () => {
+    const empty = createEmptyGrid(3, 3);
+    const drawn = updateCell(empty, 0, 2, 1);
+    expect(drawn[0][2]).toBe(1);
+    expect(updateCell(drawn, 0, 2, 1)).toBe(drawn);
+    expect(updateCell(drawn, 0, 2, 0)[0][2]).toBe(0);
+  });
+
+  it("clears a painted board back to the same empty size", () => {
+    const painted = toggleCell(createEmptyGrid(4, 6), 2, 3);
+    const cleared = createEmptyGrid(painted.length, painted[0].length);
+    expect(cleared).toHaveLength(4);
+    expect(cleared[0]).toHaveLength(6);
+    expect(cleared.every((row) => row.every((cell) => cell === 0))).toBe(true);
+  });
+});
+
+describe("load pattern and run", () => {
+  it("centers a glider and advances it by one generation", () => {
+    const placed = placePattern(patterns.Glider, 10, 10);
+    expect(placed.clipped).toBe(0);
+    expect(countLive(placed.grid)).toBe(5);
+    const next = stepSimulation(placed.grid, 10, 10);
+    expect(next.changed).toBe(true);
+    expect(next.shouldStop).toBe(false);
+    expect(countLive(next.grid)).toBe(5);
   });
 });
 

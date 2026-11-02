@@ -26,9 +26,11 @@ An interactive, client-only implementation of Conway's Game of Life. Draw on a c
 | Tailwind CSS | ^4.3.3 |
 | Vitest | ^5.0.5 |
 | Vite | ^8.3.5 |
-| ESLint | ^10.13.0 |
+| ESLint | ^10.14.0 |
 
 `typescript-eslint` 8 does not support the TypeScript 7 API. The `typescript` dependency stays on the TypeScript 6 compatibility package so lint and Next's programmatic check keep working. `npm run typecheck` runs the TypeScript 7 `tsc` binary.
+
+`minimatch` is overridden to 11.0.4. ESLint 10 and typescript-eslint 8 still declare a dependency on minimatch 10, which is the range in [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249).
 
 This app is fully client-side: no Firebase, Stripe, server actions, or API routes.
 
@@ -54,7 +56,7 @@ roadmap.md             # Next steps and known limits
 
 ### Prerequisites
 
-- Node.js 22 or newer (CI uses Node 22)
+- Node.js 22.12 or newer (CI uses Node 24)
 - npm
 
 ### Install and run
