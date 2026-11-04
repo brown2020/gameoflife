@@ -261,7 +261,6 @@ export const GridCanvas = memo<GridCanvasProps>(
         onFocus={() => setIsGridFocused(true)}
         onBlur={() => setIsGridFocused(false)}
         className={`${CURSOR_BY_TOOL[tool]} touch-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
-        role="application"
         aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Space"
         aria-label={`Game of Life grid, ${numRows} by ${numCols} cells, ${tool} tool. Arrow keys move the cursor. Enter or Space edits the focused cell.`}
       />

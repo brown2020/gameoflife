@@ -18,13 +18,13 @@ An interactive, client-only implementation of Conway's Game of Life. Draw on a c
 
 | Technology | Version range in package.json |
 | --- | --- |
-| Next.js (App Router) | ^16.4.3 |
+| Next.js (App Router) | ^16.4.5 |
 | React / React DOM | ^19.3.1 |
 | TypeScript compiler (`tsc`) | 7.0.2, installed as `@typescript/native` (`npm:typescript@^7.0.2`) |
 | TypeScript API for ESLint and Next | `@typescript/typescript6` ^6.0.2, aliased as `typescript` |
 | typescript-eslint | ^8.72.1 |
-| Tailwind CSS | ^4.3.3 |
-| Vitest | ^5.0.5 |
+| Tailwind CSS | ^4.3.4 |
+| Vitest | ^5.1.0 |
 | Vite | ^8.3.5 |
 | ESLint | ^10.14.0 |
 

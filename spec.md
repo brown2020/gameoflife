@@ -35,7 +35,7 @@ There is no account system, no API route, no server action, and no database.
 - Draw paints alive cells. Eraser paints dead cells.
 - A stroke paints every cell on the line from the previous sample to the current one.
 - Pointer capture follows the gesture, including touch. The canvas sets `touch-action: none`.
-- The canvas is focusable (`role="application"`). Arrow keys move a cursor. Enter or Space edits that cell with the active tool and does not start the simulation.
+- The canvas is focusable. Arrow keys move a cursor. Enter or Space edits that cell with the active tool and does not start the simulation.
 
 ## Patterns
 
