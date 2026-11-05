@@ -35,7 +35,7 @@ There is no account system, no API route, no server action, and no database.
 - Draw paints alive cells. Eraser paints dead cells.
 - A stroke paints every cell on the line from the previous sample to the current one.
 - Pointer capture follows the gesture, including touch. The canvas sets `touch-action: none`.
-- The canvas is focusable. Arrow keys move a cursor. Enter or Space edits that cell with the active tool and does not start the simulation.
+- The canvas is focusable. Arrow keys move a cursor. Enter edits that cell with the active tool. Space, C, and S keep their global shortcuts while the canvas is focused.
 
 ## Patterns
 
@@ -54,7 +54,7 @@ Loading a pattern stops the simulation and resets the generation counter. Cells 
 
 - Sticky toolbar: brand, tool, pattern select, start/stop, step, clear, random, generation, speed, zoom, tutorial, rules. The rows wrap on a narrow viewport.
 - Step is disabled while the simulation is running.
-- Keyboard shortcuts, when focus is not in a field, the canvas, or an open dialog: Space play/pause, C clear, R random, S step (only while paused), +/= zoom in, -/_ zoom out.
+- Keyboard shortcuts, when focus is on the page or the canvas and not in a text field or an open dialog: Space play/pause, C clear, R random, S step (only while paused), +/= zoom in, -/_ zoom out.
 - Tutorial is a five-step dialog. Rules lists the four Conway rules and how to use the board. Escape or the backdrop closes the dialog.
 - The info panel shows the active pattern's description, or a short intro when nothing is selected.
 

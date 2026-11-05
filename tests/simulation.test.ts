@@ -208,10 +208,18 @@ describe("speed slider", () => {
 });
 
 describe("keyboard shortcut guard", () => {
-  it("ignores shortcuts while a dialog is open or focus is on the grid", () => {
+  it("ignores shortcuts in a dialog or text field, including when the canvas is focused", () => {
     expect(shouldIgnoreGameShortcut({ nodeName: "BUTTON" }, true)).toBe(true);
-    expect(shouldIgnoreGameShortcut({ nodeName: "CANVAS" }, false)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "CANVAS" }, true)).toBe(true);
     expect(shouldIgnoreGameShortcut({ nodeName: "INPUT" }, false)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "TEXTAREA" }, false)).toBe(
+      true
+    );
+    expect(shouldIgnoreGameShortcut({ nodeName: "SELECT" }, false)).toBe(true);
+    expect(shouldIgnoreGameShortcut({ nodeName: "CANVAS" }, false)).toBe(
+      false
+    );
+    expect(shouldIgnoreGameShortcut({ nodeName: "BODY" }, false)).toBe(false);
     expect(shouldIgnoreGameShortcut({ nodeName: "BUTTON" }, false)).toBe(
       false
     );

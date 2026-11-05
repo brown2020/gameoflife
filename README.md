@@ -11,7 +11,7 @@ An interactive, client-only implementation of Conway's Game of Life. Draw on a c
 - Zoom from 5 px to 30 px. The grid is sized to the visible frame.
 - Built-in patterns, centered on the current grid: spaceships (Glider, LWSS), oscillators (Pulsar, Pentadecathlon, Toad, Beacon), a gun (Gosper glider gun), and methuselahs (Diehard, R-pentomino). If a pattern is larger than the board, the info panel says how many cells were clipped.
 - Random fill, clear, and a generation counter with reset.
-- Keyboard: Space (play/pause), C (clear), R (random), S (step), +/− (zoom). Those shortcuts pause while a dialog is open. Focus the grid and use the arrow keys plus Enter or Space to edit cells.
+- Keyboard: Space (play/pause), C (clear), R (random), S (step), +/− (zoom). Those shortcuts work while the page or the grid is focused, and they pause while a dialog is open or focus is in a text field. Focus the grid and use the arrow keys plus Enter to edit cells.
 - Tutorial and rules dialogs, plus a pattern info panel.
 
 ## Tech stack

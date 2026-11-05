@@ -1,8 +1,12 @@
 import { useEffect, useCallback } from "react";
 
-const EDITING_TARGETS = new Set(["INPUT", "TEXTAREA", "SELECT", "CANVAS"]);
+const TEXT_ENTRY_TARGETS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
 
-/** Skip global shortcuts while a modal is open or focus is in a field or the grid. */
+/**
+ * Skip global shortcuts while a dialog is open or focus is in a text field.
+ * The canvas and the page itself still receive Space, C, S, and the other
+ * game keys.
+ */
 export const shouldIgnoreGameShortcut = (
   target: unknown,
   dialogOpen: boolean
@@ -10,7 +14,7 @@ export const shouldIgnoreGameShortcut = (
   if (dialogOpen) return true;
   if (!target || typeof target !== "object") return false;
   const nodeName = (target as { nodeName?: string }).nodeName;
-  return typeof nodeName === "string" && EDITING_TARGETS.has(nodeName);
+  return typeof nodeName === "string" && TEXT_ENTRY_TARGETS.has(nodeName);
 };
 
 interface KeyboardShortcutActions {
